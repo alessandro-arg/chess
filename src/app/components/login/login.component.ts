@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth.service';
 import { take } from 'rxjs/operators';
+import { ToastService } from '../../toast.service';
 
 @Component({
   selector: 'app-login',
@@ -19,13 +20,13 @@ export class LoginComponent {
   });
   isSubmitting = false;
   showPassword = false;
-  loginError = '';
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly auth: AuthService,
     private readonly router: Router,
-    private readonly zone: NgZone
+    private readonly zone: NgZone,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -66,28 +67,47 @@ export class LoginComponent {
   submit(): void {
     if (this.form.valid) {
       this.isSubmitting = true;
-      this.loginError = '';
 
       const { email, password } = this.form.value;
       this.auth
         .loginWithEmail(email as string, password as string)
-        .then((user) =>
+        .then((user) => {
+          this.toastService.success(
+            'Login successful! Welcome back to the game.',
+            'Authentication Success',
+            4000
+          );
           this.zone.run(() =>
             this.router.navigateByUrl(`/${user.uid}/dashboard`)
-          )
-        )
+          );
+        })
         .catch((error) => {
-          this.loginError = this.auth.mapAuthError(error);
-          setInterval(() => {
-            this.loginError = '';
-          }, 3000);
+          const msg = this.auth.mapAuthError(error);
+          this.toastService.error(msg, 'Login Failed', 4000);
         })
         .finally(() => (this.isSubmitting = false));
     }
   }
 
-  google(): void {
-    this.auth.loginWithGooglePopup().catch(() => {});
+  async google(): Promise<void> {
+    this.isSubmitting = true;
+    try {
+      const user = await this.auth.loginWithGooglePopup();
+      if (user) {
+        this.toastService.success(
+          'Successfully logged in with Google!',
+          '',
+          4000
+        );
+        this.zone.run(() =>
+          this.router.navigateByUrl(`/${user.uid}/dashboard`)
+        );
+      } else {
+        this.toastService.info('Google sign-in was canceled.', '', 4000);
+      }
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 
   get email() {

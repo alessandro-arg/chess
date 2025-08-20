@@ -1,1 +1,24 @@
-<p>dashboard works!</p>
+<div class="absolute top-4 right-4 flex items-center gap-5 text-white">
+  <button
+    (click)="logout()"
+    class="inline-flex items-center rounded-lg bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-sm font-medium"
+  >
+    Logout
+  </button>
+  <button
+    (click)="openProfile()"
+    class="inline-flex items-center rounded-lg bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-sm font-medium"
+  >
+    Profile
+  </button>
+</div>
+<div
+  class="w-full h-[calc(100vh-133px)] flex items-center justify-center px-4 text-white"
+>
+  <div class="text-center">
+    <h1 class="text-2xl font-semibold">
+      Welcome, {{ displayName || "Player" }}
+    </h1>
+    <p class="mt-2 text-gray-400">Your dashboard will appear here.</p>
+  </div>
+</div>

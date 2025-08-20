@@ -1,0 +1,41 @@
+.toast-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #334155, #1f2937);
+  border-left: 4px solid #10b981;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15), 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #334155, #1f2937);
+  border-left: 4px solid #ef4444;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15), 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #334155, #1f2937);
+  border-left: 4px solid #f59e0b;
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.15), 0 4px 6px rgba(0, 0, 0, 0.3);
+}

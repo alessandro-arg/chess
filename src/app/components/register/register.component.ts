@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../auth.service';
+import { ToastService } from '../../toast.service';
 
 @Component({
   selector: 'app-register',
@@ -11,51 +13,67 @@ import { CommonModule } from '@angular/common';
   styleUrl: './register.component.css',
 })
 export class RegisterComponent {
-  loginForm = this.fb.group({
-    usernameOrEmail: ['', [Validators.required]],
-    password: ['', [Validators.required]],
-    rememberMe: [false],
+  readonly form = this.fb.group({
+    username: ['', [Validators.required, Validators.minLength(3)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    acceptTerms: [false, [Validators.requiredTrue]],
   });
+  isSubmitting = false;
   showPassword = false;
-  isLoading = false;
-  loginError = '';
 
-  constructor(private fb: FormBuilder, private router: Router) {}
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly auth: AuthService,
+    private toastService: ToastService,
+    private readonly router: Router
+  ) {}
 
-  togglePasswordVisibility(): void {
-    this.showPassword = !this.showPassword;
-  }
+  register(): void {
+    if (this.form.valid) {
+      this.isSubmitting = true;
 
-  onLogin(): void {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.loginError = '';
-
-      const formValue = this.loginForm.value;
-
-      // Simulate API call
-      setTimeout(() => {
-        this.isLoading = false;
-        // Handle login logic here
-        console.log('Login attempt:', formValue);
-        // this.authService.login(formValue).subscribe(...)
-      }, 2000);
+      const { username, email, password } = this.form.value;
+      this.auth
+        .register(username as string, email as string, password as string)
+        .then(() => {
+          this.toastService.success(
+            'Account created successfully! Please sign in.',
+            'Welcome',
+            4000
+          );
+          this.router.navigateByUrl('/login');
+        })
+        .catch((error) => {
+          const msg =
+            this.auth.mapAuthError?.(error) ??
+            'Registration failed. Please try again.';
+          (this.toastService as any).error
+            ? this.toastService.error(msg, '', 4000)
+            : this.toastService.error(msg, 'Oops', 4000);
+        })
+        .finally(() => (this.isSubmitting = false));
     }
   }
 
-  onForgotPassword(): void {
-    // Handle forgot password logic
-    console.log('Forgot password clicked');
+  get username() {
+    return this.form.get('username');
   }
 
-  onGoogleLogin(): void {
-    // Handle Google OAuth login
-    console.log('Google login clicked');
+  get email() {
+    return this.form.get('email');
   }
 
-  onDiscordLogin(): void {
-    // Handle Discord OAuth login
-    console.log('Discord login clicked');
+  get password() {
+    return this.form.get('password');
+  }
+
+  get acceptTerms() {
+    return this.form.get('acceptTerms');
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 
   navigateToLogin(): void {

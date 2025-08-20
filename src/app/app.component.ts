@@ -13,7 +13,7 @@ import { ToastMessageComponent } from './components/toast-message/toast-message.
   styleUrl: './app.component.css',
 })
 export class AppComponent {
-  title = 'chess';
+  title = 'Chess²';
   isAuthenticated$: Observable<boolean> = this.auth.isAuthenticated$;
 
   constructor(

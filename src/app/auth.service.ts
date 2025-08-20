@@ -52,6 +52,22 @@ export class AuthService {
     }
   }
 
+  mapAuthError(err: unknown): string {
+    const code = (err as any)?.code as string | undefined;
+
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+        return 'Invalid email or password. Please try again.';
+      case 'auth/user-not-found':
+        return 'No account found with this email.';
+      case 'auth/too-many-requests':
+        return 'Too many failed attempts. Please wait and try again later.';
+      default:
+        return 'Login failed. Please try again.';
+    }
+  }
+
   private async ensureUserDocument(user: User): Promise<void> {
     const ref = doc(this.firestore, 'users', user.uid);
     await setDoc(

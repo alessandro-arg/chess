@@ -36,37 +36,38 @@
 
       <!-- Login Form -->
       <div class="px-6 py-6">
-        <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-6">
+        <form
+          (ngSubmit)="submit()"
+          [formGroup]="form"
+          novalidate
+          class="space-y-6"
+        >
           <!-- Username/Email Field -->
           <div class="relative group">
             <label
               class="block text-steel-accent text-sm font-medium mb-2 uppercase tracking-wide"
+              for="email"
             >
-              Username/Email
+              Email
             </label>
             <input
-              type="text"
-              formControlName="usernameOrEmail"
+              id="email"
+              type="email"
+              formControlName="email"
               class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg"
-              [class.border-red-500]="
-                loginForm.get('usernameOrEmail')?.invalid &&
-                loginForm.get('usernameOrEmail')?.touched
-              "
-              placeholder="Enter your username or email"
+              placeholder="you@example.com"
+              autocomplete="email"
             />
             <div
               class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
             ></div>
-            <div class="w-full p-2 h-6">
-              <div
-                *ngIf="
-                  loginForm.get('usernameOrEmail')?.invalid &&
-                  loginForm.get('usernameOrEmail')?.touched
-                "
-                class="text-xs text-red-400"
+            <div class="w-full p-2 h-6 text-xs text-red-400">
+              <span *ngIf="email?.touched && email?.hasError('required')"
+                >Email is required.</span
               >
-                Username or email is required
-              </div>
+              <span *ngIf="email?.touched && email?.hasError('email')"
+                >Enter a valid email.</span
+              >
             </div>
           </div>
 
@@ -74,18 +75,17 @@
           <div class="relative group !mt-3">
             <label
               class="block text-steel-accent text-sm font-medium mb-2 uppercase tracking-wide"
+              for="password"
             >
               Password
             </label>
             <input
+              id="password"
               [type]="showPassword ? 'text' : 'password'"
               formControlName="password"
               class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg pr-12"
-              [class.border-red-500]="
-                loginForm.get('password')?.invalid &&
-                loginForm.get('password')?.touched
-              "
-              placeholder="Enter your password"
+              placeholder="••••••••"
+              autocomplete="current-password"
             />
             <button
               type="button"
@@ -97,25 +97,24 @@
             <div
               class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
             ></div>
-            <div class="w-full p-2 h-6">
-              <div
-                *ngIf="
-                  loginForm.get('password')?.invalid &&
-                  loginForm.get('password')?.touched
-                "
-                class="mt-1 text-xs text-red-400"
+            <div class="w-full p-2 h-6 text-xs text-red-400">
+              <span *ngIf="password?.touched && password?.hasError('required')"
+                >Password is required.</span
               >
-                Password is required
-              </div>
+              <span *ngIf="password?.touched && password?.hasError('minlength')"
+                >At least 6 characters.</span
+              >
             </div>
           </div>
 
           <!-- Remember & Forgot -->
-          <div class="flex items-center justify-between text-sm">
+          <!-- <div class="flex items-center justify-between text-sm">
             <label
               class="flex items-center text-gray-300 hover:text-white cursor-pointer"
+              for="checkbox"
             >
               <input
+                id="checkbox"
                 type="checkbox"
                 formControlName="rememberMe"
                 class="mr-2 w-4 h-4 text-steel-primary bg-steel-bg/60 border-steel-primary/40 rounded focus:ring-steel-accent focus:ring-2"
@@ -128,19 +127,19 @@
             >
               Forgot password?
             </a>
-          </div>
+          </div> -->
 
           <!-- Login Button -->
           <button
             type="submit"
-            [disabled]="loginForm.invalid || isLoading"
-            class="w-full bg-gradient-to-r from-steel-primary via-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-bold py-4 px-4 rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-lg relative overflow-hidden group disabled:opacity-50 disabled:cursor-default disabled:transform-none"
+            [disabled]="form.invalid || isSubmitting"
+            class="w-full bg-gradient-to-r from-steel-primary via-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-lg relative overflow-hidden group disabled:opacity-50 disabled:cursor-default disabled:transform-none"
           >
             <span class="relative z-10 flex items-center justify-center gap-2">
-              <span *ngIf="!isLoading">Log in</span>
-              <span *ngIf="isLoading">Connecting...</span>
+              <span *ngIf="!isSubmitting">Log in</span>
+              <span *ngIf="isSubmitting">Connecting...</span>
               <div
-                *ngIf="isLoading"
+                *ngIf="isSubmitting"
                 class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
               ></div>
             </span>
@@ -149,24 +148,29 @@
             ></div>
           </button>
 
-          <!-- Error Message -->
-          <div
-            *ngIf="loginError"
-            class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
-          >
-            <p class="text-red-400 text-sm text-center">{{ loginError }}</p>
-          </div>
-
-          <!-- Divider -->
-          <div class="relative my-6">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-steel-primary/20"></div>
+          <div class="relative w-full">
+            <!-- Divider -->
+            <div class="relative my-6" aria-hidden="true">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-steel-primary/20"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span
+                  class="px-4 bg-steel-secondary/70 text-gray-400 rounded-lg p-1 flex items-center justify-center"
+                  >or</span
+                >
+              </div>
             </div>
-            <div class="relative flex justify-center text-sm">
-              <span
-                class="px-4 bg-steel-secondary/70 text-gray-400 rounded-lg p-1 flex items-center justify-center"
-                >or</span
+            <!-- Error Message -->
+            <div class="absolute -top-2 left-0 w-full h-6 z-10">
+              <div
+                *ngIf="loginError"
+                class="p-3 bg-steel-secondary/70 border-2 border-red-500/20 rounded-lg"
               >
+                <p class="text-red-400 text-sm text-center">
+                  {{ loginError }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -174,7 +178,7 @@
           <div class="flex items-center justify-center w-full">
             <button
               type="button"
-              (click)="onGoogleLogin()"
+              (click)="google()"
               class="flex items-center w-full justify-center px-4 py-3 bg-steel-bg/60 hover:bg-steel-bg border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all group"
             >
               <div class="flex items-center justify-center gap-4">

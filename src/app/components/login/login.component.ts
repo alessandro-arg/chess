@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../auth.service';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -11,51 +13,97 @@ import { CommonModule } from '@angular/common';
   styleUrl: './login.component.css',
 })
 export class LoginComponent {
-  loginForm = this.fb.group({
-    usernameOrEmail: ['', [Validators.required]],
-    password: ['', [Validators.required]],
-    rememberMe: [false],
+  readonly form = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
+  isSubmitting = false;
   showPassword = false;
-  isLoading = false;
   loginError = '';
 
-  constructor(private fb: FormBuilder, private router: Router) {}
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly auth: AuthService,
+    private readonly router: Router,
+    private readonly zone: NgZone
+  ) {}
+
+  ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      this.auth.handleRedirectResult().then((user) => {
+        if (user) {
+          try {
+            const suppress =
+              sessionStorage.getItem('suppressLoginRedirectOnce') === '1';
+            if (suppress) {
+              sessionStorage.removeItem('suppressLoginRedirectOnce');
+              return;
+            }
+          } catch {}
+          this.zone.run(() =>
+            this.router.navigateByUrl(`/${user.uid}/dashboard`)
+          );
+        }
+      });
+      this.auth.user$.pipe(take(1)).subscribe((user) => {
+        if (user) {
+          try {
+            const suppress =
+              sessionStorage.getItem('suppressLoginRedirectOnce') === '1';
+            if (suppress) {
+              sessionStorage.removeItem('suppressLoginRedirectOnce');
+              return;
+            }
+          } catch {}
+          this.zone.run(() =>
+            this.router.navigateByUrl(`/${user.uid}/dashboard`)
+          );
+        }
+      });
+    }
+  }
+
+  submit(): void {
+    if (this.form.valid) {
+      this.isSubmitting = true;
+      this.loginError = '';
+
+      const { email, password } = this.form.value;
+      this.auth
+        .loginWithEmail(email as string, password as string)
+        .then((user) =>
+          this.zone.run(() =>
+            this.router.navigateByUrl(`/${user.uid}/dashboard`)
+          )
+        )
+        .catch((error) => {
+          this.loginError = this.auth.mapAuthError(error);
+          setInterval(() => {
+            this.loginError = '';
+          }, 3000);
+        })
+        .finally(() => (this.isSubmitting = false));
+    }
+  }
+
+  google(): void {
+    this.auth.loginWithGooglePopup().catch(() => {});
+  }
+
+  get email() {
+    return this.form.get('email');
+  }
+
+  get password() {
+    return this.form.get('password');
+  }
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }
 
-  onLogin(): void {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.loginError = '';
-
-      const formValue = this.loginForm.value;
-
-      // Simulate API call
-      setTimeout(() => {
-        this.isLoading = false;
-        // Handle login logic here
-        console.log('Login attempt:', formValue);
-        // this.authService.login(formValue).subscribe(...)
-      }, 2000);
-    }
-  }
-
   onForgotPassword(): void {
-    // Handle forgot password logic
     console.log('Forgot password clicked');
-  }
-
-  onGoogleLogin(): void {
-    // Handle Google OAuth login
-    console.log('Google login clicked');
-  }
-
-  onDiscordLogin(): void {
-    // Handle Discord OAuth login
-    console.log('Discord login clicked');
   }
 
   navigateToRegister(): void {

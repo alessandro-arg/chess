@@ -1,0 +1,261 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md relative">
+    <div class="absolute -top-12 right-4 flex items-center gap-2">
+      <div class="w-2 h-2 bg-steel-accent rounded-full"></div>
+      <span class="text-steel-accent text-xs font-medium">SECURE</span>
+    </div>
+    <!-- Main Login Container -->
+    <div
+      class="bg-steel-secondary/70 backdrop-blur-lg rounded-xl border-l-4 border-steel-primary shadow-2xl overflow-hidden"
+    >
+      <!-- Header Section -->
+      <div
+        class="px-6 py-6 bg-gradient-to-r from-steel-secondary/50 to-steel-bg/30 border-b border-steel-primary/20"
+      >
+        <div class="text-center">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-steel-primary to-steel-accent rounded-xl mb-4 shadow-lg"
+          >
+            <img
+              src="../../../assets/login-icon.png"
+              alt="Icon"
+              class="w-12 h-12"
+            />
+          </div>
+          <h1 class="text-3xl font-bold text-white mb-2">Join Chess²</h1>
+          <div class="flex items-center justify-center gap-2 mb-3">
+            <div class="w-1 h-1 bg-steel-accent rounded-full"></div>
+            <div class="w-2 h-2 bg-steel-primary rounded-full"></div>
+            <div class="w-1 h-1 bg-steel-accent rounded-full"></div>
+          </div>
+          <p class="text-gray-400 text-sm">Begin your chess mastery journey</p>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <div class="px-6 py-6">
+        <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-6">
+          <!-- Username/Email Field -->
+          <div class="relative group">
+            <label
+              class="block text-steel-accent text-sm font-medium mb-2 uppercase tracking-wide"
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              formControlName="usernameOrEmail"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg"
+              [class.border-red-500]="
+                loginForm.get('usernameOrEmail')?.invalid &&
+                loginForm.get('usernameOrEmail')?.touched
+              "
+              placeholder="Choose a unique username"
+            />
+            <div
+              class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
+            ></div>
+            <div class="w-full p-2 h-6">
+              <div
+                *ngIf="
+                  loginForm.get('usernameOrEmail')?.invalid &&
+                  loginForm.get('usernameOrEmail')?.touched
+                "
+                class="text-xs text-red-400"
+              >
+                Username or email is required
+              </div>
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <!-- <div class="relative group">
+            <label
+              class="block text-steel-accent text-sm font-medium mb-2 uppercase tracking-wide"
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              formControlName="email"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 focus:outline-none transition-all rounded-t-lg"
+              [class.border-red-500]="
+                registerForm.get('email')?.invalid &&
+                registerForm.get('email')?.touched
+              "
+              [class.border-green-500]="
+                registerForm.get('email')?.valid &&
+                registerForm.get('email')?.touched
+              "
+              placeholder="Enter your email address"
+            />
+            <div
+              class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
+            ></div>
+            <div
+              *ngIf="
+                registerForm.get('email')?.invalid &&
+                registerForm.get('email')?.touched
+              "
+              class="mt-1 text-xs text-red-400"
+            >
+              <span *ngIf="registerForm.get('email')?.errors?.['required']"
+                >Email is required</span
+              >
+              <span *ngIf="registerForm.get('email')?.errors?.['email']"
+                >Please enter a valid email</span
+              >
+            </div>
+          </div> -->
+
+          <!-- Password Field -->
+          <div class="relative group !mt-3">
+            <label
+              class="block text-steel-accent text-sm font-medium mb-2 uppercase tracking-wide"
+            >
+              Password
+            </label>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg pr-12"
+              [class.border-red-500]="
+                loginForm.get('password')?.invalid &&
+                loginForm.get('password')?.touched
+              "
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="absolute right-3 top-9 text-gray-400 hover:text-steel-accent transition-colors"
+            >
+              <span class="text-sm">{{ showPassword ? "👁️" : "👁️‍🗨️" }}</span>
+            </button>
+            <div
+              class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
+            ></div>
+            <div class="w-full p-2 h-6">
+              <div
+                *ngIf="
+                  loginForm.get('password')?.invalid &&
+                  loginForm.get('password')?.touched
+                "
+                class="mt-1 text-xs text-red-400"
+              >
+                Password is required
+              </div>
+            </div>
+          </div>
+
+          <!-- Remember & Forgot -->
+          <div class="flex items-center justify-between text-sm">
+            <label
+              class="flex items-center text-gray-300 hover:text-white cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                formControlName="rememberMe"
+                class="mr-2 w-4 h-4 text-steel-primary bg-steel-bg/60 border-steel-primary/40 rounded focus:ring-steel-accent focus:ring-2"
+              />
+              Remember session
+            </label>
+            <a
+              (click)="onForgotPassword()"
+              class="text-steel-accent hover:text-steel-primary font-medium transition-colors cursor-pointer"
+            >
+              Forgot password?
+            </a>
+          </div>
+
+          <!-- Login Button -->
+          <button
+            type="submit"
+            [disabled]="loginForm.invalid || isLoading"
+            class="w-full bg-gradient-to-r from-steel-primary via-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-bold py-4 px-4 rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-lg relative overflow-hidden group disabled:opacity-50 disabled:cursor-default disabled:transform-none"
+          >
+            <span class="relative z-10 flex items-center justify-center gap-2">
+              <span *ngIf="!isLoading">Log in</span>
+              <span *ngIf="isLoading">Connecting...</span>
+              <div
+                *ngIf="isLoading"
+                class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+              ></div>
+            </span>
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-steel-accent to-steel-primary opacity-0 group-hover:opacity-100 transition-opacity"
+            ></div>
+          </button>
+
+          <!-- Error Message -->
+          <div
+            *ngIf="loginError"
+            class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
+          >
+            <p class="text-red-400 text-sm text-center">{{ loginError }}</p>
+          </div>
+
+          <!-- Divider -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-steel-primary/20"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span
+                class="px-4 bg-steel-secondary/70 text-gray-400 rounded-lg p-1 flex items-center justify-center"
+                >or</span
+              >
+            </div>
+          </div>
+
+          <!-- Social Login -->
+          <div class="flex items-center justify-center w-full">
+            <button
+              type="button"
+              (click)="onGoogleLogin()"
+              class="flex items-center w-full justify-center px-4 py-3 bg-steel-bg/60 hover:bg-steel-bg border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all group"
+            >
+              <div class="flex items-center justify-center gap-4">
+                <img
+                  src="../../../assets/google-icon.svg"
+                  alt="Google icon"
+                  class="w-6 h-6"
+                />
+                <span class="text-white font-medium text-sm">
+                  Sign in with Google</span
+                >
+              </div>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 bg-steel-bg/30 border-t border-steel-primary/10">
+        <div class="text-center text-xs text-gray-400">
+          <p>
+            You already have an account?
+            <a
+              (click)="navigateToLogin()"
+              class="text-steel-accent hover:text-steel-primary font-medium cursor-pointer"
+            >
+              Log in here
+            </a>
+          </p>
+          <div class="flex justify-center items-center gap-2 mt-2">
+            <a href="#" class="hover:text-white">Privacy Policy</a>
+            <div class="w-1 h-1 bg-steel-accent rounded-full"></div>
+            <a href="#" class="hover:text-white">Impressum</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Version Info -->
+    <div
+      class="absolute -bottom-8 left-0 text-steel-accent/60 text-xs font-mono"
+    >
+      Beta v0.1 | Build 2025.08
+    </div>
+  </div>
+</div>

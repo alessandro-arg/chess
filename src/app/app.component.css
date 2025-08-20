@@ -1,0 +1,45 @@
+.chess-piece-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%23334155' fill-opacity='0.03'%3E%3Cpath d='M30 0l15 25-15 10L15 25z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f7ebb, #7dd3fc);
+  opacity: 0.1;
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating-orb-1 {
+  width: 100px;
+  height: 100px;
+  top: 10%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.floating-orb-2 {
+  width: 60px;
+  height: 60px;
+  bottom: 20%;
+  left: 15%;
+  animation-delay: 2s;
+}
+
+.floating-orb-3 {
+  width: 80px;
+  height: 80px;
+  top: 60%;
+  right: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}

@@ -1,9 +1,137 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Auth } from '@angular/fire/auth';
+import { Firestore } from '@angular/fire/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import {
+  initializeApp as initializeFirebaseApp,
+  deleteApp,
+  FirebaseApp,
+} from 'firebase/app';
+import { getAuth as getFirebaseAuth } from 'firebase/auth';
+import { environment } from '../environments/environment';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  getRedirectResult,
+  updateProfile,
+  onAuthStateChanged,
+  signOut,
+  setPersistence,
+  browserLocalPersistence,
+  User,
+} from 'firebase/auth';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly userSubject = new BehaviorSubject<User | null>(null);
+  readonly user$: Observable<User | null> = this.userSubject.asObservable();
+  readonly isAuthenticated$: Observable<boolean> = this.user$.pipe(
+    map((u) => !!u)
+  );
 
-  constructor() { }
+  private readonly isBrowser: boolean;
+
+  constructor(
+    private readonly auth: Auth,
+    private readonly firestore: Firestore,
+    @Inject(PLATFORM_ID) private readonly platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    if (this.isBrowser) {
+      setPersistence(this.auth, browserLocalPersistence).catch(() => {});
+      onAuthStateChanged(this.auth, async (user) => {
+        this.userSubject.next(user);
+        if (user) {
+          await this.ensureUserDocument(user);
+        }
+      });
+    }
+  }
+
+  private async ensureUserDocument(user: User): Promise<void> {
+    const ref = doc(this.firestore, 'users', user.uid);
+    await setDoc(
+      ref,
+      {
+        uid: user.uid,
+        displayName: user.displayName ?? null,
+        email: user.email ?? null,
+        photoURL: user.photoURL ?? null,
+        lastLoginAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  async loginWithEmail(email: string, password: string): Promise<User> {
+    const cred = await signInWithEmailAndPassword(this.auth, email, password);
+    if (cred.user) {
+      await this.ensureUserDocument(cred.user);
+    }
+    return cred.user;
+  }
+
+  async register(
+    username: string,
+    email: string,
+    password: string
+  ): Promise<void> {
+    if (!this.isBrowser) return;
+    const secondaryApp: FirebaseApp = initializeFirebaseApp(
+      environment.firebase,
+      `secondary-${Date.now()}`
+    );
+    const secondaryAuth = getFirebaseAuth(secondaryApp);
+    try {
+      const cred = await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        password
+      );
+      if (cred.user && username) {
+        await updateProfile(cred.user, { displayName: username });
+      }
+      if (cred.user) {
+        await this.ensureUserDocument(cred.user);
+      }
+      await signOut(secondaryAuth);
+    } finally {
+      await deleteApp(secondaryApp);
+    }
+  }
+
+  async loginWithGooglePopup(): Promise<User | null> {
+    if (!this.isBrowser) return null;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      const result = await signInWithPopup(this.auth, provider);
+      if (result.user) {
+        await this.ensureUserDocument(result.user);
+        return result.user;
+      }
+      return null;
+    } catch (err: any) {
+      return null;
+    }
+  }
+
+  async handleRedirectResult(): Promise<User | null> {
+    if (!this.isBrowser) return null;
+    const result = await getRedirectResult(this.auth);
+    if (result?.user) {
+      await this.ensureUserDocument(result.user);
+      return result.user;
+    }
+    return null;
+  }
+
+  async logout(): Promise<void> {
+    await signOut(this.auth);
+  }
 }

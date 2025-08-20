@@ -1,0 +1,28 @@
+<div
+  class="fixed inset-0 pointer-events-none z-50 flex flex-col items-end justify-end gap-2 p-4 sm:p-6"
+>
+  <div class="w-full max-w-sm space-y-2">
+    <div
+      *ngFor="let t of toasts"
+      class="pointer-events-auto overflow-hidden rounded-xl border shadow-lg backdrop-blur bg-gray-900/80 border-white/10"
+    >
+      <div class="p-4 flex items-start gap-3">
+        <div [ngClass]="iconBg(t)" class="rounded-md p-1.5 mt-0.5">
+          <span class="text-white">{{ icon(t) }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white" *ngIf="t.title">
+            {{ t.title }}
+          </p>
+          <p class="text-sm text-gray-300">{{ t.message }}</p>
+        </div>
+        <button
+          class="text-gray-400 hover:text-gray-200"
+          (click)="dismiss(t.id)"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

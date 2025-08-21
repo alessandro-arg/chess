@@ -1,0 +1,230 @@
+<!-- Overlay -->
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  *ngIf="isOpen"
+  aria-modal="true"
+  role="dialog"
+>
+  <div
+    class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+    (click)="close.emit()"
+  ></div>
+
+  <!-- Modal -->
+  <div
+    class="relative w-full max-w-lg sm:max-w-xl bg-steel-secondary/70 border border-steel-primary/20 rounded-2xl shadow-2xl backdrop-blur-xl"
+  >
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-steel-primary/20"
+    >
+      <h3 class="text-white font-semibold text-base sm:text-lg">Friends</h3>
+      <button
+        (click)="close.emit()"
+        class="text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-steel-accent rounded-lg p-1"
+        aria-label="Close"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-4 sm:px-6 pt-3 flex gap-2">
+      <button
+        class="px-3 py-1.5 rounded-xl text-sm"
+        [class.bg-steel-accent]="activeTab() === 'search'"
+        [class.text-white]="activeTab() === 'search'"
+        [class.text-gray-300]="activeTab() !== 'search'"
+        (click)="activeTab.set('search')"
+      >
+        Search
+      </button>
+      <button
+        class="px-3 py-1.5 rounded-xl text-sm"
+        [class.bg-steel-accent]="activeTab() === 'requests'"
+        [class.text-white]="activeTab() === 'requests'"
+        [class.text-gray-300]="activeTab() !== 'requests'"
+        (click)="activeTab.set('requests')"
+      >
+        Requests
+      </button>
+      <button
+        class="px-3 py-1.5 rounded-xl text-sm"
+        [class.bg-steel-accent]="activeTab() === 'friends'"
+        [class.text-white]="activeTab() === 'friends'"
+        [class.text-gray-300]="activeTab() !== 'friends'"
+        (click)="activeTab.set('friends')"
+      >
+        Friends
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-4 sm:px-6 py-4 max-h-[70vh] overflow-y-auto">
+      <!-- SEARCH TAB -->
+      <div *ngIf="activeTab() === 'search'" class="space-y-3">
+        <div class="flex items-center gap-2">
+          <input
+            [ngModel]="query()"
+            (ngModelChange)="query.set($event)"
+            (keyup.enter)="runSearch()"
+            placeholder="Search users by name or email"
+            class="w-full rounded-xl bg-steel-bg/40 border border-steel-primary/20 text-white placeholder-gray-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+          />
+          <button
+            (click)="runSearch()"
+            class="px-3 py-2 rounded-xl bg-steel-accent text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+          >
+            Search
+          </button>
+        </div>
+
+        <div
+          *ngIf="query().trim().length < 3 && !searching()"
+          class="text-gray-400 text-sm"
+        >
+          Type at least 3 characters to search.
+        </div>
+
+        <div *ngIf="searching()" class="text-gray-300 text-sm">Searching…</div>
+
+        <div
+          *ngIf="
+            !searching() && query().trim().length >= 3 && results().length === 0
+          "
+          class="text-gray-400 text-sm"
+        >
+          No users found with this username.
+        </div>
+
+        <div *ngIf="results().length" class="space-y-2">
+          <div
+            *ngFor="let u of results()"
+            class="flex items-center gap-3 p-2 rounded-xl hover:bg-steel-bg/30 border border-transparent hover:border-steel-primary/10"
+          >
+            <img
+              [src]="u.photoURL || '../../../assets/user.png'"
+              class="w-9 h-9 rounded-lg"
+              alt="avatar"
+            />
+            <div class="flex-1 min-w-0">
+              <p class="text-white text-sm font-medium truncate">
+                {{ u.displayName }}
+              </p>
+              <p class="text-gray-400 text-xs truncate">{{ u.email }}</p>
+            </div>
+
+            <!-- Button State Machine -->
+            <ng-container [ngSwitch]="u.status">
+              <button
+                *ngSwitchCase="'none'"
+                (click)="addFriend(u.uid)"
+                class="px-3 py-1.5 rounded-lg text-sm bg-steel-accent text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+              >
+                Add Friend
+              </button>
+
+              <span
+                *ngSwitchCase="'friends'"
+                class="text-green-400 text-xs font-medium"
+                >Already friends</span
+              >
+
+              <span
+                *ngSwitchCase="'pending-out'"
+                class="text-yellow-300 text-xs font-medium"
+                >Pending…</span
+              >
+
+              <div *ngSwitchCase="'pending-in'" class="flex items-center gap-2">
+                <button
+                  (click)="accept(u.uid)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs bg-green-600 text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-green-600"
+                >
+                  Accept
+                </button>
+                <button
+                  (click)="decline(u.uid)"
+                  class="px-2.5 py-1.5 rounded-lg text-xs bg-red-600 text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  Decline
+                </button>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- REQUESTS TAB -->
+      <div *ngIf="activeTab() === 'requests'" class="space-y-5">
+        <div>
+          <h4 class="text-white text-sm font-semibold mb-2">Incoming</h4>
+          <div class="space-y-2" *ngIf="incoming$ | async as incoming">
+            <div *ngIf="!incoming.length" class="text-gray-400 text-sm">
+              No incoming requests.
+            </div>
+            <div
+              *ngFor="let r of incoming; trackBy: trackById"
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
+            >
+              <div class="text-white text-sm truncate">
+                {{ otherUid(r.uids) }}
+              </div>
+              <div class="flex gap-2">
+                <button
+                  (click)="acceptByFriendship(r.uids)"
+                  class="px-3 py-1.5 rounded-lg text-xs bg-green-600 text-white"
+                >
+                  Accept
+                </button>
+                <button
+                  (click)="declineByFriendship(r.uids)"
+                  class="px-3 py-1.5 rounded-lg text-xs bg-red-600 text-white"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-white text-sm font-semibold mb-2">Outgoing</h4>
+          <div class="space-y-2" *ngIf="outgoing$ | async as outgoing">
+            <div *ngIf="!outgoing.length" class="text-gray-400 text-sm">
+              No outgoing requests.
+            </div>
+            <div
+              *ngFor="let r of outgoing; trackBy: trackById"
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
+            >
+              <div class="text-white text-sm truncate">
+                {{ otherUid(r.uids) }}
+              </div>
+              <span class="text-yellow-300 text-xs font-medium">Pending…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRIENDS TAB -->
+      <ng-container *ngIf="activeTab() === 'friends'">
+        <div class="space-y-2" *ngIf="myFriends$ | async as friends">
+          <div *ngIf="!friends.length" class="text-gray-400 text-sm">
+            No friends yet. Find some on Search.
+          </div>
+
+          <div
+            *ngFor="let f of friends"
+            class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
+          >
+            <div class="text-white text-sm truncate">
+              {{ otherUid(f.uids) }}
+            </div>
+            <span class="text-green-400 text-xs font-medium">Friend</span>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

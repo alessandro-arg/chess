@@ -25,9 +25,21 @@ export class UserService {
     );
   }
 
-  upsertProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
+  upsertProfile(
+    uid: string,
+    data: Partial<UserProfile & { searchKeywords: string[] }>
+  ): Promise<void> {
     const ref = doc(this.firestore, 'users', uid);
-    return setDoc(ref, data, { merge: true });
+    const base = (data.displayName || data.email || '')?.toLowerCase() ?? '';
+    const tokens = new Set<string>();
+    base.split(/[\s@._-]+/).forEach((part) => {
+      if (!part) return;
+      for (let i = 1; i <= Math.min(part.length, 20); i++) {
+        tokens.add(part.slice(0, i));
+      }
+    });
+    const searchKeywords = Array.from(tokens);
+    return setDoc(ref, { ...data, searchKeywords }, { merge: true });
   }
 
   async isDisplayNameTaken(

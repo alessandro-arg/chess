@@ -1,24 +1,688 @@
-<div class="absolute top-4 right-4 flex items-center gap-5 text-white">
-  <button
-    (click)="logout()"
-    class="inline-flex items-center rounded-lg bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-sm font-medium"
+<!-- Chess Dashboard Template -->
+<div class="min-h-screen bg-steel-bg">
+  <!-- Floating Background Orbs -->
+  <div
+    class="fixed top-10 right-10 w-32 h-32 bg-steel-primary/5 rounded-full blur-3xl pointer-events-none"
+  ></div>
+  <div
+    class="fixed bottom-20 left-15 w-24 h-24 bg-steel-accent/5 rounded-full blur-2xl pointer-events-none"
+  ></div>
+
+  <!-- Main Dashboard Container -->
+  <div
+    class="max-w-7xl mx-auto px-4 py-6 lg:py-8 min-h-dvh flex flex-col gap-8"
   >
-    Logout
-  </button>
-  <button
-    (click)="openProfile()"
-    class="inline-flex items-center rounded-lg bg-gray-700 hover:bg-gray-600 px-3 py-1.5 text-sm font-medium"
-  >
-    Profile
-  </button>
-</div>
-<div
-  class="w-full h-[calc(100vh-133px)] flex items-center justify-center px-4 text-white"
->
-  <div class="text-center">
-    <h1 class="text-2xl font-semibold">
-      Welcome, {{ displayName || "Player" }}
-    </h1>
-    <p class="mt-2 text-gray-400">Your dashboard will appear here.</p>
+    <!-- Header Section -->
+    <header>
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      >
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-steel-primary to-steel-accent rounded-xl flex items-center justify-center shadow-lg"
+          >
+            <img src="../../../assets/login-icon.png" alt="Logo" />
+          </div>
+          <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-white">
+              Chess² Dashboard
+            </h1>
+            <div class="flex items-center gap-2 mt-1">
+              <div
+                class="w-2 h-2 bg-steel-accent rounded-full animate-pulse"
+                aria-label="Online status"
+              ></div>
+              <span class="text-steel-accent text-sm font-medium">ONLINE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="p-2 bg-steel-secondary/50 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-bg"
+            aria-label="Logout"
+            (click)="logout()"
+          >
+            <img
+              src="../../../assets/logout.png"
+              alt="Logout"
+              class="w-7 h-7"
+            />
+          </button>
+          <button
+            type="button"
+            class="p-2 bg-steel-secondary/50 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-bg"
+            aria-label="Settings"
+          >
+            <img
+              src="../../../assets/settings.png"
+              alt="Settings"
+              class="w-7 h-7"
+            />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 flex-1">
+      <!-- Left Column: Quick Play Cards -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Quick Play Section -->
+        <section aria-labelledby="quick-play-heading">
+          <h2
+            id="quick-play-heading"
+            class="text-xl font-semibold text-white mb-4"
+          >
+            Quick Play
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Play vs Bot Card -->
+            <article
+              class="group bg-steel-secondary/70 backdrop-blur-lg border-l-4 border-steel-primary hover:border-steel-accent rounded-xl p-6 transition-all hover:scale-[1.02] focus-within:scale-[1.02] shadow-lg hover:shadow-xl"
+            >
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-12 h-12 bg-steel-primary/20 group-hover:bg-steel-accent/20 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <img
+                      src="../../../assets/robot.png"
+                      alt="Robot"
+                      class="w-10 h-10"
+                    />
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-white">
+                      Play vs Bot
+                    </h3>
+                    <p class="text-sm text-gray-400">Practice against AI</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-steel-accent font-medium">
+                    AVAILABLE
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bot Difficulty Selection -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-steel-accent mb-2"
+                  >Difficulty Level</label
+                >
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    aria-pressed="false"
+                  >
+                    Easy
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs font-medium bg-steel-primary text-white border border-steel-primary rounded-md focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    aria-pressed="true"
+                  >
+                    Medium
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    aria-pressed="false"
+                  >
+                    Hard
+                  </button>
+                </div>
+              </div>
+
+              <!-- Time Control -->
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-steel-accent mb-2"
+                  >Time Control</label
+                >
+                <select
+                  class="w-full px-3 py-2 bg-steel-bg/60 border border-steel-primary/40 focus:border-steel-accent text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                >
+                  <option value="blitz">Blitz (5+3)</option>
+                  <option value="rapid">Rapid (15+10)</option>
+                  <option value="classical">Classical (30+0)</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
+              >
+                <span class="flex items-center justify-center gap-2">
+                  Start Bot Game
+                  <img
+                    src="../../../assets/play-icon.png"
+                    alt="Play icon"
+                    class="w-5 h-5"
+                  />
+                </span>
+              </button>
+            </article>
+
+            <!-- Play vs Friend Card -->
+            <article
+              class="group bg-steel-secondary/70 backdrop-blur-lg border-l-4 border-steel-primary hover:border-steel-accent rounded-xl p-6 transition-all hover:scale-[1.02] focus-within:scale-[1.02] shadow-lg hover:shadow-xl"
+            >
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-12 h-12 bg-steel-primary/20 group-hover:bg-steel-accent/20 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <img
+                      src="../../../assets/friends-icon.png"
+                      alt="Play with friends"
+                      class="w-10 h-10"
+                    />
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-white">
+                      Play vs Friend
+                    </h3>
+                    <p class="text-sm text-gray-400">Challenge a friend</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-green-400 font-medium">
+                    12 ONLINE
+                  </div>
+                </div>
+              </div>
+
+              <!-- Game Mode Tabs -->
+              <div class="mb-4">
+                <div class="flex bg-steel-bg/50 rounded-lg p-1 mb-3">
+                  <button
+                    type="button"
+                    class="flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all text-white bg-steel-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    aria-pressed="true"
+                  >
+                    Create Game
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    aria-pressed="false"
+                  >
+                    Join Game
+                  </button>
+                </div>
+              </div>
+
+              <!-- Friend Invitation -->
+              <div class="mb-4">
+                <label
+                  for="friend-search"
+                  class="block text-sm font-medium text-steel-accent mb-2"
+                  >Invite Friend</label
+                >
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="friend-search"
+                    placeholder="Search by username..."
+                    class="w-full px-3 py-2 bg-steel-bg/60 border border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  />
+                  <button
+                    type="button"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 text-steel-accent hover:text-steel-primary transition-colors focus:outline-none"
+                    aria-label="Search friends"
+                  >
+                    <img
+                      src="../../../assets/search.png"
+                      alt="Search icon"
+                      class="w-5 h-5"
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Challenge -->
+              <div class="space-y-3">
+                <button
+                  type="button"
+                  class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
+                >
+                  <span class="flex items-center justify-center gap-2">
+                    Create Game Room
+                    <img
+                      src="../../../assets/plus.png"
+                      alt="Plus icon"
+                      class="w-5 h-5"
+                    />
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="w-full bg-steel-bg/60 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary"
+                >
+                  <span class="flex items-center justify-center gap-2">
+                    Quick Match
+                    <img
+                      src="../../../assets/blitz.png"
+                      alt="Blitz icon"
+                      class="w-5 h-5"
+                    />
+                  </span>
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Recent Games -->
+        <section aria-labelledby="recent-games-heading">
+          <h2
+            id="recent-games-heading"
+            class="text-lg font-semibold text-white mb-3"
+          >
+            Recent Games
+          </h2>
+          <div
+            class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4"
+          >
+            <div class="space-y-3">
+              <!-- Game Result Item -->
+              <article
+                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center"
+                  >
+                    <span class="text-green-400 text-sm font-bold">W</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-white">
+                      vs ChessMaster_Pro
+                    </p>
+                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                      <span>Rapid • 15+10</span>
+                      <span>•</span>
+                      <span>2h ago</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                  aria-label="View game analysis"
+                >
+                  <img
+                    src="../../../assets/analysis.png"
+                    alt="Analysis icon"
+                    class="w-5 h-5"
+                  />
+                </button>
+              </article>
+
+              <!-- Another Game -->
+              <article
+                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center"
+                  >
+                    <span class="text-red-400 text-sm font-bold">L</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-white">
+                      vs QueenGambit_22
+                    </p>
+                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                      <span>Blitz • 5+3</span>
+                      <span>•</span>
+                      <span>4h ago</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                  aria-label="View game analysis"
+                >
+                  <img
+                    src="../../../assets/analysis.png"
+                    alt="Analysis icon"
+                    class="w-5 h-5"
+                  />
+                </button>
+              </article>
+
+              <!-- Draw Game -->
+              <article
+                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-8 h-8 bg-gray-500/20 rounded-lg flex items-center justify-center"
+                  >
+                    <span class="text-gray-400 text-sm font-bold">D</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-white">
+                      vs TacticalBot_v2
+                    </p>
+                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                      <span>Classical • 30+0</span>
+                      <span>•</span>
+                      <span>1d ago</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                  aria-label="View game analysis"
+                >
+                  <img
+                    src="../../../assets/analysis.png"
+                    alt="Analysis icon"
+                    class="w-5 h-5"
+                  />
+                </button>
+              </article>
+            </div>
+
+            <!-- View All Games -->
+            <div class="mt-4 pt-3 border-t border-steel-primary/20">
+              <button
+                type="button"
+                class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+              >
+                View All Games
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Active Games Section (Mobile Only, Hidden on Desktop) -->
+        <section
+          class="lg:hidden"
+          aria-labelledby="active-games-mobile-heading"
+        >
+          <h2
+            id="active-games-mobile-heading"
+            class="text-lg font-semibold text-white mb-3"
+          >
+            Active Games
+          </h2>
+          <div
+            class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4"
+          >
+            <div class="text-center py-6">
+              <span
+                class="text-4xl mb-3 block"
+                role="img"
+                aria-label="No active games"
+                >♟️</span
+              >
+              <p class="text-gray-400 text-sm">No active games</p>
+              <p class="text-gray-500 text-xs mt-1">
+                Start a new game to see it here
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Profile & Recent Activity -->
+      <aside class="space-y-6">
+        <!-- Profile Summary Card -->
+        <section aria-labelledby="profile-heading">
+          <h2
+            id="profile-heading"
+            class="text-xl font-semibold text-white mb-4"
+          >
+            Profile Summary
+          </h2>
+          <div
+            class="bg-steel-secondary/70 backdrop-blur-lg border-l-4 border-steel-accent rounded-xl p-6 shadow-lg"
+          >
+            <div class="flex items-start gap-4 mb-4">
+              <!-- Avatar -->
+              <div *ngIf="photoURL" class="flex-shrink-0">
+                <img
+                  [src]="photoURL"
+                  alt="Player avatar"
+                  class="w-12 h-12 rounded-xl border-2 border-steel-primary/30 object-cover object-center"
+                />
+              </div>
+              <!-- Profile Info -->
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-white truncate">
+                  {{ displayName }}
+                </h3>
+                <p class="text-sm text-gray-400">Premium Member</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <div
+                    class="w-2 h-2 bg-green-500 rounded-full"
+                    aria-label="Online"
+                  ></div>
+                  <span class="text-xs text-green-400">Online</span>
+                </div>
+              </div>
+              <!-- Settings -->
+              <button
+                type="button"
+                class="p-1 text-gray-400 hover:text-steel-accent transition-colors rounded focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                aria-label="Profile settings"
+              >
+                <img
+                  src="../../../assets/settings.png"
+                  alt="Settings icon"
+                  class="w-5 h-5"
+                />
+              </button>
+            </div>
+
+            <!-- Ratings -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="text-center">
+                <div class="text-xl font-bold text-steel-accent">1547</div>
+                <div class="text-xs text-gray-400 uppercase tracking-wide">
+                  Rapid
+                </div>
+                <div class="text-xs text-green-400">+12</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xl font-bold text-steel-accent">1423</div>
+                <div class="text-xs text-gray-400 uppercase tracking-wide">
+                  Blitz
+                </div>
+                <div class="text-xs text-red-400">-7</div>
+              </div>
+            </div>
+
+            <!-- Rating Trend Placeholder -->
+            <!-- <div class="mb-4">
+              <div class="text-xs text-gray-400 mb-2">Recent Performance</div>
+              <div
+                class="h-8 bg-steel-bg/60 rounded-lg flex items-end justify-between px-2 py-1"
+              > -->
+            <!-- Simple CSS-only sparkline simulation -->
+            <!-- <div
+                  class="w-1 bg-steel-accent/60 rounded-full"
+                  style="height: 60%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent/60 rounded-full"
+                  style="height: 40%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent/60 rounded-full"
+                  style="height: 80%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent/60 rounded-full"
+                  style="height: 70%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent rounded-full"
+                  style="height: 90%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent rounded-full"
+                  style="height: 85%"
+                ></div>
+                <div
+                  class="w-1 bg-steel-accent rounded-full"
+                  style="height: 95%"
+                ></div>
+              </div>
+            </div> -->
+
+            <!-- Profile Actions -->
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="flex-1 bg-steel-bg/60 hover:bg-steel-primary/20 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium py-2 px-3 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+              >
+                View Profile
+              </button>
+              <button
+                type="button"
+                class="px-3 py-2 bg-steel-bg/60 hover:bg-steel-primary/20 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                aria-label="Share profile"
+              >
+                <img
+                  src="../../../assets/share.png"
+                  alt="Share icon"
+                  class="w-5 h-5"
+                />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Online Friends -->
+        <section aria-labelledby="friends-heading">
+          <h2
+            id="friends-heading"
+            class="text-lg font-semibold text-white mb-3"
+          >
+            Online Friends
+          </h2>
+          <div
+            class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4 space-y-3"
+          >
+            <!-- Friend Item -->
+            <div
+              class="flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%237DD3FC' rx='8'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3EAK%3C/text%3E%3C/svg%3E"
+                alt="Friend avatar"
+                class="w-8 h-8 rounded-lg"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-white truncate">
+                    AlphaKnight_99
+                  </p>
+                  <div
+                    class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
+                  ></div>
+                </div>
+                <p class="text-xs text-gray-400">Playing • Rapid</p>
+              </div>
+              <button
+                type="button"
+                class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                aria-label="Challenge AlphaKnight_99"
+              >
+                <img
+                  src="../../../assets/swords.png"
+                  alt="Swords icon"
+                  class="w-5 h-5"
+                />
+              </button>
+            </div>
+
+            <!-- Another Friend -->
+            <div
+              class="flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230F7EBB' rx='8'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3ERS%3C/text%3E%3C/svg%3E"
+                alt="Friend avatar"
+                class="w-8 h-8 rounded-lg"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-white truncate">
+                    RookSlayer
+                  </p>
+                  <div
+                    class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
+                  ></div>
+                </div>
+                <p class="text-xs text-gray-400">Online • 1456 rating</p>
+              </div>
+              <button
+                type="button"
+                class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                aria-label="Challenge RookSlayer"
+              >
+                <img
+                  src="../../../assets/swords.png"
+                  alt="Swords icon"
+                  class="w-5 h-5"
+                />
+              </button>
+            </div>
+
+            <!-- View All Friends -->
+            <button
+              type="button"
+              (click)="openFriendsModal()"
+              class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+            >
+              View All Friends (12)
+            </button>
+          </div>
+          <app-friends-modal
+            [isOpen]="showFriendsModal"
+            (close)="closeFriendsModal()"
+          ></app-friends-modal>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Footer Status Bar -->
+    <footer
+      class="w-full pt-6 border-t border-steel-primary/20"
+      role="contentinfo"
+    >
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm text-gray-400"
+      >
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Connected to Chess²</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>Latency:</span>
+            <span class="text-steel-accent font-medium">23ms</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span>Server: null</span>
+          <time datetime="2025-01-21">Beta v1.0</time>
+        </div>
+      </div>
+    </footer>
   </div>
 </div>

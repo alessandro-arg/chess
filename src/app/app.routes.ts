@@ -12,12 +12,12 @@ export const routes: Routes = [
   {
     path: ':uid/dashboard',
     component: DashboardComponent,
-    canActivate: [authGuard],
+    // canActivate: [authGuard],
   },
   {
     path: ':uid/profile-settings',
     component: ProfileSettingsComponent,
-    canActivate: [authGuard],
+    // canActivate: [authGuard],
   },
   { path: '**', redirectTo: 'login' },
 ];

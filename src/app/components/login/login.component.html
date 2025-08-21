@@ -84,15 +84,22 @@
               [type]="showPassword ? 'text' : 'password'"
               formControlName="password"
               class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg pr-12"
-              placeholder="••••••••"
+              [placeholder]="showPassword ? 'Password' : '••••••••'"
               autocomplete="current-password"
             />
             <button
               type="button"
               (click)="togglePasswordVisibility()"
-              class="absolute right-3 top-9 text-gray-400 hover:text-steel-accent transition-colors"
+              class="absolute right-3 top-[38px] text-gray-400 hover:text-steel-accent transition-colors"
             >
-              <span class="text-sm">{{ showPassword ? "👁️" : "👁️‍🗨️" }}</span>
+              <img
+                [src]="
+                  showPassword
+                    ? '../../../assets/hide-password.png'
+                    : '../../../assets/show-password.png'
+                "
+                class="w-7 h-7 cursor-pointer opacity-80"
+              />
             </button>
             <div
               class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"
@@ -133,7 +140,7 @@
           <button
             type="submit"
             [disabled]="form.invalid || isSubmitting"
-            class="w-full bg-gradient-to-r from-steel-primary via-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-lg relative overflow-hidden group disabled:opacity-50 disabled:cursor-default disabled:transform-none"
+            class="w-full bg-gradient-to-r from-steel-primary via-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-lg relative overflow-hidden group disabled:opacity-50 disabled:cursor-default disabled:transform-none disabled:pointer-events-none"
           >
             <span class="relative z-10 flex items-center justify-center gap-2">
               <span *ngIf="!isSubmitting">Log in</span>
@@ -167,8 +174,9 @@
           <div class="flex items-center justify-center w-full">
             <button
               type="button"
+              [disabled]="isSubmitting"
               (click)="google()"
-              class="flex items-center w-full justify-center px-4 py-3 bg-steel-bg/60 hover:bg-steel-bg border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all group"
+              class="flex items-center w-full justify-center px-4 py-3 bg-steel-bg/60 hover:bg-steel-bg border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all group disabled:opacity-50 disabled:cursor-default disabled:pointer-events-none"
             >
               <div class="flex items-center justify-center gap-4">
                 <img

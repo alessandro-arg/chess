@@ -113,15 +113,22 @@
               [type]="showPassword ? 'text' : 'password'"
               formControlName="password"
               class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 focus:outline-none transition-all rounded-t-lg pr-12"
-              placeholder="Create a strong password"
+              [placeholder]="showPassword ? 'Strong Password' : '••••••••'"
               autocomplete="new-password"
             />
             <button
               type="button"
               (click)="togglePasswordVisibility()"
-              class="absolute right-3 top-9 text-gray-400 hover:text-steel-accent transition-colors"
+              class="absolute right-3 top-[38px] text-gray-400 hover:text-steel-accent transition-colors"
             >
-              <span class="text-sm">{{ showPassword ? "👁️" : "👁️‍🗨️" }}</span>
+              <img
+                [src]="
+                  showPassword
+                    ? '../../../assets/hide-password.png'
+                    : '../../../assets/show-password.png'
+                "
+                class="w-7 h-7 cursor-pointer opacity-80"
+              />
             </button>
             <div
               class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-steel-primary to-steel-accent transform scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left"

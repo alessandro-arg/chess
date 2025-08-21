@@ -88,16 +88,17 @@
 
         <div *ngIf="searching()" class="text-gray-300 text-sm">Searching…</div>
 
-        <div
-          *ngIf="
-            !searching() && query().trim().length >= 3 && results().length === 0
-          "
-          class="text-gray-400 text-sm"
-        >
-          No users found with this username.
-        </div>
-
         <div *ngIf="results().length" class="space-y-2">
+          <div
+            *ngIf="
+              !searching() &&
+              query().trim().length >= 3 &&
+              results().length === 0
+            "
+            class="text-gray-400 text-sm"
+          >
+            No users found with this username.
+          </div>
           <div
             *ngFor="let u of results()"
             class="flex items-center gap-3 p-2 rounded-xl hover:bg-steel-bg/30 border border-transparent hover:border-steel-primary/10"
@@ -168,7 +169,7 @@
               class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
             >
               <div class="text-white text-sm truncate">
-                {{ otherUid(r.uids) }}
+                {{ name$(otherUid(r.uids)) | async }}
               </div>
               <div class="flex gap-2">
                 <button
@@ -199,7 +200,7 @@
               class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
             >
               <div class="text-white text-sm truncate">
-                {{ otherUid(r.uids) }}
+                {{ name$(otherUid(r.uids)) | async }}
               </div>
               <span class="text-yellow-300 text-xs font-medium">Pending…</span>
             </div>
@@ -219,7 +220,7 @@
             class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
           >
             <div class="text-white text-sm truncate">
-              {{ otherUid(f.uids) }}
+              {{ name$(otherUid(f.uids)) | async }}
             </div>
             <span class="text-green-400 text-xs font-medium">Friend</span>
           </div>

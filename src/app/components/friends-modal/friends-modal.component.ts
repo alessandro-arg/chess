@@ -7,13 +7,13 @@ import {
   computed,
   effect,
 } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FriendService, Friendship } from '../../friend.service';
 import { UserService, UserProfile } from '../../user.service';
 import { FormsModule } from '@angular/forms';
 import { Auth } from '@angular/fire/auth';
-import { take } from 'rxjs/operators';
+import { map, shareReplay, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-friends-modal',
@@ -41,11 +41,26 @@ export class FriendsModalComponent {
   incoming$ = this.friend.incomingPending$();
   outgoing$ = this.friend.outgoingPending$();
 
+  private nameCache = new Map<string, Observable<string>>();
+
   constructor(
     private friend: FriendService,
     private user: UserService,
     private auth: Auth
   ) {}
+
+  name$(uid: string): Observable<string> {
+    if (!uid) return of('');
+    const cached = this.nameCache.get(uid);
+    if (cached) return cached;
+
+    const obs = this.user.userProfile$(uid).pipe(
+      map((p) => p?.displayName || p?.email || uid),
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
+    this.nameCache.set(uid, obs);
+    return obs;
+  }
 
   meUid(): string {
     return this.auth.currentUser?.uid ?? '';
@@ -72,8 +87,6 @@ export class FriendsModalComponent {
 
   async runSearch() {
     const term = this.query().trim().toLowerCase();
-
-    // Require at least 3 chars
     if (term.length < 3) {
       this.results.set([]);
       return;

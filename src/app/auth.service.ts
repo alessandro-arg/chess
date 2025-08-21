@@ -24,6 +24,7 @@ import {
   User,
 } from 'firebase/auth';
 import { BehaviorSubject, map, Observable } from 'rxjs';
+import { UserService } from './user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -38,6 +39,7 @@ export class AuthService {
   constructor(
     private readonly auth: Auth,
     private readonly firestore: Firestore,
+    private readonly userService: UserService,
     @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -82,6 +84,13 @@ export class AuthService {
       },
       { merge: true }
     );
+
+    await this.userService.upsertProfile(user.uid, {
+      uid: user.uid,
+      displayName: user.displayName ?? user.email ?? null,
+      email: user.email ?? null,
+      photoURL: user.photoURL ?? null,
+    });
   }
 
   async loginWithEmail(email: string, password: string): Promise<User> {

@@ -12,11 +12,11 @@
 
   <!-- Modal -->
   <div
-    class="relative w-full max-w-lg sm:max-w-xl bg-steel-secondary/70 border border-steel-primary/20 rounded-2xl shadow-2xl backdrop-blur-xl"
+    class="relative w-full min-h-[400px] max-w-lg sm:max-w-xl bg-steel-secondary/70 border-l-4 border-steel-accent backdrop-blur rounded-xl shadow-2xl"
   >
     <!-- Header -->
     <div
-      class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-steel-primary/20"
+      class="flex items-center justify-between px-4 sm:px-6 py-4 bg-gradient-to-r from-steel-secondary/50 to-steel-bg/30 border-b border-steel-primary/20"
     >
       <h3 class="text-white font-semibold text-base sm:text-lg">Friends</h3>
       <button
@@ -31,28 +31,31 @@
     <!-- Tabs -->
     <div class="px-4 sm:px-6 pt-3 flex gap-2">
       <button
-        class="px-3 py-1.5 rounded-xl text-sm"
-        [class.bg-steel-accent]="activeTab() === 'search'"
-        [class.text-white]="activeTab() === 'search'"
-        [class.text-gray-300]="activeTab() !== 'search'"
+        class="px-3 py-1.5 font-medium text-sm bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        [ngClass]="{
+          'bg-steel-accent text-white ring-2 ring-steel-accent outline-none':
+            activeTab() === 'search'
+        }"
         (click)="activeTab.set('search')"
       >
         Search
       </button>
       <button
-        class="px-3 py-1.5 rounded-xl text-sm"
-        [class.bg-steel-accent]="activeTab() === 'requests'"
-        [class.text-white]="activeTab() === 'requests'"
-        [class.text-gray-300]="activeTab() !== 'requests'"
+        class="px-3 py-1.5 font-medium text-sm bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        [ngClass]="{
+          'bg-steel-accent text-white ring-2 ring-steel-accent outline-none':
+            activeTab() === 'requests'
+        }"
         (click)="activeTab.set('requests')"
       >
         Requests
       </button>
       <button
-        class="px-3 py-1.5 rounded-xl text-sm"
-        [class.bg-steel-accent]="activeTab() === 'friends'"
-        [class.text-white]="activeTab() === 'friends'"
-        [class.text-gray-300]="activeTab() !== 'friends'"
+        class="px-3 py-1.5 font-medium text-sm bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        [ngClass]="{
+          'bg-steel-accent text-white ring-2 ring-steel-accent outline-none':
+            activeTab() === 'friends'
+        }"
         (click)="activeTab.set('friends')"
       >
         Friends
@@ -73,7 +76,7 @@
           />
           <button
             (click)="runSearch()"
-            class="px-3 py-2 rounded-xl bg-steel-accent text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+            class="px-3 py-2 rounded-lg transition-all bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
           >
             Search
           </button>

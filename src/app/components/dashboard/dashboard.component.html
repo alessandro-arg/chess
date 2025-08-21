@@ -40,17 +40,84 @@
 
         <!-- Quick Actions -->
         <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="p-2 bg-steel-secondary/50 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-bg"
-            aria-label="Notifications"
-          >
-            <img
-              src="../../../assets/bell.png"
-              alt="Notifications"
-              class="w-7 h-7"
-            />
-          </button>
+          <div id="notif-bell-wrap" class="relative">
+            <button
+              type="button"
+              (click)="toggleNotifications(); $event.stopPropagation()"
+              class="p-2 bg-steel-secondary/50 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-bg"
+              aria-label="Notifications"
+            >
+              <img
+                src="../../../assets/bell.png"
+                alt="Notifications"
+                class="w-7 h-7"
+              />
+              <ng-container *ngIf="unreadCount$ | async as c">
+                <span
+                  *ngIf="c > 0"
+                  class="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 inline-flex items-center justify-center bg-red-600 text-white text-[11px] font-semibold rounded-full shadow ring-2 ring-steel-bg"
+                >
+                  {{ c > 9 ? "9+" : c }}
+                </span>
+              </ng-container>
+            </button>
+            <div
+              *ngIf="showNotifPanel"
+              class="absolute right-0 mt-2 w-80 max-w-[90vw] z-50 bg-steel-secondary/80 backdrop-blur border border-steel-primary/30 rounded-xl shadow-2xl p-3"
+              (click)="$event.stopPropagation()"
+            >
+              <h4 class="text-white text-sm font-semibold px-1 mb-2">
+                Notifications
+              </h4>
+
+              <!-- Empty state -->
+              <div
+                *ngIf="(incoming$ | async)?.length === 0"
+                class="text-gray-400 text-sm px-1 py-2"
+              >
+                No new friend requests.
+              </div>
+
+              <!-- Requests list (first 5) -->
+              <div
+                *ngFor="let r of incoming$ | async | slice : 0 : 5"
+                class="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-steel-bg/30 cursor-pointer"
+                (click)="openRequestsFromNotif()"
+              >
+                <ng-container
+                  *ngIf="profile$(otherUidFrom(r.uids)) | async as p"
+                >
+                  <div class="flex items-center gap-3 min-w-0">
+                    <img
+                      [src]="p?.photoURL || '../../../assets/user.png'"
+                      class="w-8 h-8 rounded-lg"
+                      alt="avatar"
+                    />
+                    <div class="min-w-0">
+                      <p class="text-white text-sm truncate text-wrap">
+                        <span class="font-medium">{{
+                          p?.displayName || p?.email || otherUidFrom(r.uids)
+                        }}</span>
+                        <span class="text-gray-300">
+                          sent you a friend request.</span
+                        >
+                      </p>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- Footer -->
+              <div class="mt-2 px-1">
+                <button
+                  class="text-steel-accent hover:text-steel-primary text-xs"
+                  (click)="openRequestsFromNotif()"
+                >
+                  View all requests →
+                </button>
+              </div>
+            </div>
+          </div>
           <button
             type="button"
             class="p-2 bg-steel-secondary/50 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent/50 rounded-lg transition-all outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-bg"
@@ -204,7 +271,7 @@
                 </div>
                 <div class="text-right">
                   <div class="text-xs text-green-400 font-medium">
-                    12 ONLINE
+                    {{ (friendCount$ | async) || 0 }} ONLINE
                   </div>
                 </div>
               </div>
@@ -588,71 +655,61 @@
           <div
             class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4 space-y-3"
           >
-            <!-- Friend Item -->
             <div
-              class="flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors"
+              *ngIf="friendsPreview$ | async as friends; else loadingFriends"
             >
-              <img
-                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%237DD3FC' rx='8'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3EAK%3C/text%3E%3C/svg%3E"
-                alt="Friend avatar"
-                class="w-8 h-8 rounded-lg"
-              />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-white truncate">
-                    AlphaKnight_99
-                  </p>
-                  <div
-                    class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
-                  ></div>
+              <ng-container *ngIf="friends.length; else noFriends">
+                <!-- Friend Item -->
+                <div
+                  *ngFor="let f of friends"
+                  class="flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors"
+                >
+                  <img
+                    [src]="f.profile?.photoURL || '../../../assets/user.png'"
+                    alt="Friend avatar"
+                    class="w-8 h-8 rounded-lg"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-medium text-white truncate">
+                        {{
+                          f.profile?.displayName || f.profile?.email || f.uid
+                        }}
+                      </p>
+
+                      <div
+                        class="w-2 h-2 rounded-full flex-shrink-0"
+                        [class.bg-green-500]="f.online"
+                        [class.bg-gray-500]="!f.online"
+                      ></div>
+                    </div>
+                    <p class="text-xs text-gray-400">Playing • Rapid</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                    aria-label="Challenge AlphaKnight_99"
+                  >
+                    <img
+                      src="../../../assets/swords.png"
+                      alt="Swords icon"
+                      class="w-5 h-5"
+                    />
+                  </button>
                 </div>
-                <p class="text-xs text-gray-400">Playing • Rapid</p>
-              </div>
-              <button
-                type="button"
-                class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                aria-label="Challenge AlphaKnight_99"
-              >
-                <img
-                  src="../../../assets/swords.png"
-                  alt="Swords icon"
-                  class="w-5 h-5"
-                />
-              </button>
+              </ng-container>
+
+              <ng-template #noFriends>
+                <div class="text-gray-400 text-sm px-1">
+                  No friends yet. Find some in the Friends panel.
+                </div>
+              </ng-template>
             </div>
 
-            <!-- Another Friend -->
-            <div
-              class="flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors"
-            >
-              <img
-                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230F7EBB' rx='8'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3ERS%3C/text%3E%3C/svg%3E"
-                alt="Friend avatar"
-                class="w-8 h-8 rounded-lg"
-              />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm font-medium text-white truncate">
-                    RookSlayer
-                  </p>
-                  <div
-                    class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
-                  ></div>
-                </div>
-                <p class="text-xs text-gray-400">Online • 1456 rating</p>
-              </div>
-              <button
-                type="button"
-                class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                aria-label="Challenge RookSlayer"
-              >
-                <img
-                  src="../../../assets/swords.png"
-                  alt="Swords icon"
-                  class="w-5 h-5"
-                />
-              </button>
-            </div>
+            <ng-template #loadingFriends>
+              <div class="text-gray-400 text-sm px-1">Loading friends…</div>
+            </ng-template>
 
             <!-- View All Friends -->
             <button
@@ -660,11 +717,12 @@
               (click)="openFriendsModal()"
               class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
             >
-              View All Friends (12)
+              View All Friends ({{ (friendCount$ | async) || 0 }})
             </button>
           </div>
           <app-friends-modal
             [isOpen]="showFriendsModal"
+            [initialTab]="friendsModalTab"
             (close)="closeFriendsModal()"
           ></app-friends-modal>
         </section>

@@ -6,13 +6,16 @@ import {
   signal,
   computed,
   effect,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FriendService, Friendship } from '../../friend.service';
 import { UserService, UserProfile } from '../../user.service';
 import { FormsModule } from '@angular/forms';
-import { Auth } from '@angular/fire/auth';
+import { Auth, authState } from '@angular/fire/auth';
 import { map, shareReplay, take } from 'rxjs/operators';
 
 @Component({
@@ -22,8 +25,9 @@ import { map, shareReplay, take } from 'rxjs/operators';
   templateUrl: './friends-modal.component.html',
   styleUrl: './friends-modal.component.css',
 })
-export class FriendsModalComponent {
+export class FriendsModalComponent implements OnInit, OnChanges {
   @Input() isOpen = false;
+  @Input() initialTab: 'search' | 'requests' | 'friends' = 'search';
   @Output() close = new EventEmitter<void>();
 
   activeTab = signal<'search' | 'requests' | 'friends'>('search');
@@ -41,7 +45,7 @@ export class FriendsModalComponent {
   incoming$ = this.friend.incomingPending$();
   outgoing$ = this.friend.outgoingPending$();
 
-  private nameCache = new Map<string, Observable<string>>();
+  private profileCache = new Map<string, Observable<UserProfile | null>>();
 
   constructor(
     private friend: FriendService,
@@ -49,17 +53,42 @@ export class FriendsModalComponent {
     private auth: Auth
   ) {}
 
-  name$(uid: string): Observable<string> {
-    if (!uid) return of('');
-    const cached = this.nameCache.get(uid);
+  ngOnInit() {
+    authState(this.auth)
+      .pipe(take(1))
+      .subscribe((u) => {
+        if (!u) return;
+        this.myFriends$ = this.friend.myFriends$();
+        this.incoming$ = this.friend.incomingPending$();
+        this.outgoing$ = this.friend.outgoingPending$();
+      });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isOpen'] && this.isOpen) {
+      this.activeTab.set(this.initialTab || 'search');
+    }
+    if (changes['initialTab'] && this.isOpen) {
+      this.activeTab.set(this.initialTab);
+    }
+  }
+
+  profile$(uid: string): Observable<UserProfile | null> {
+    if (!uid) return of(null);
+    const cached = this.profileCache.get(uid);
     if (cached) return cached;
 
-    const obs = this.user.userProfile$(uid).pipe(
-      map((p) => p?.displayName || p?.email || uid),
-      shareReplay({ bufferSize: 1, refCount: true })
-    );
-    this.nameCache.set(uid, obs);
+    const obs = this.user
+      .userProfile$(uid)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.profileCache.set(uid, obs);
     return obs;
+  }
+
+  name$(uid: string): Observable<string> {
+    return this.profile$(uid).pipe(
+      map((p) => p?.displayName || p?.email || uid)
+    );
   }
 
   meUid(): string {

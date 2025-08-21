@@ -171,9 +171,23 @@
               *ngFor="let r of incoming; trackBy: trackById"
               class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
             >
-              <div class="text-white text-sm truncate">
-                {{ name$(otherUid(r.uids)) | async }}
-              </div>
+              <ng-container *ngIf="profile$(otherUid(r.uids)) | async as p">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img
+                    [src]="p?.photoURL || '../../../assets/user.png'"
+                    class="w-9 h-9 rounded-lg"
+                    alt="avatar"
+                  />
+                  <div class="min-w-0">
+                    <p class="text-white text-sm font-medium truncate">
+                      {{ p?.displayName || p?.email || otherUid(r.uids) }}
+                    </p>
+                    <p *ngIf="p?.email" class="text-gray-400 text-xs truncate">
+                      {{ p.email }}
+                    </p>
+                  </div>
+                </div>
+              </ng-container>
               <div class="flex gap-2">
                 <button
                   (click)="acceptByFriendship(r.uids)"
@@ -202,9 +216,23 @@
               *ngFor="let r of outgoing; trackBy: trackById"
               class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
             >
-              <div class="text-white text-sm truncate">
-                {{ name$(otherUid(r.uids)) | async }}
-              </div>
+              <ng-container *ngIf="profile$(otherUid(r.uids)) | async as p">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img
+                    [src]="p?.photoURL || '../../../assets/user.png'"
+                    class="w-9 h-9 rounded-lg"
+                    alt="avatar"
+                  />
+                  <div class="min-w-0">
+                    <p class="text-white text-sm font-medium truncate">
+                      {{ p?.displayName || p?.email || otherUid(r.uids) }}
+                    </p>
+                    <p *ngIf="p?.email" class="text-gray-400 text-xs truncate">
+                      {{ p.email }}
+                    </p>
+                  </div>
+                </div>
+              </ng-container>
               <span class="text-yellow-300 text-xs font-medium">Pending…</span>
             </div>
           </div>
@@ -222,10 +250,24 @@
             *ngFor="let f of friends"
             class="flex items-center justify-between p-2 rounded-xl hover:bg-steel-bg/30"
           >
-            <div class="text-white text-sm truncate">
-              {{ name$(otherUid(f.uids)) | async }}
-            </div>
-            <span class="text-green-400 text-xs font-medium">Friend</span>
+            <ng-container *ngIf="profile$(otherUid(f.uids)) | async as p">
+              <div class="flex items-center gap-3 min-w-0">
+                <img
+                  [src]="p?.photoURL || '../../../assets/user.png'"
+                  class="w-9 h-9 rounded-lg"
+                  alt="avatar"
+                />
+                <div class="min-w-0">
+                  <p class="text-white text-sm font-medium truncate">
+                    {{ p?.displayName || p?.email || otherUid(f.uids) }}
+                  </p>
+                  <p *ngIf="p?.email" class="text-gray-400 text-xs truncate">
+                    {{ p.email }}
+                  </p>
+                </div>
+              </div>
+            </ng-container>
+            <span class="text-green-400 text-xs font-medium mr-3">Friend</span>
           </div>
         </div>
       </ng-container>

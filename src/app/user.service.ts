@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Firestore, doc, docData, setDoc } from '@angular/fire/firestore';
-import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
+  Timestamp,
+} from 'firebase/firestore';
 import { Observable, map } from 'rxjs';
 
 export interface UserProfile {
@@ -8,6 +15,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
+  createdAt: Date | string | number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -17,7 +25,27 @@ export class UserService {
   userProfile$(uid: string): Observable<UserProfile | null> {
     const ref = doc(this.firestore, 'users', uid);
     return docData(ref, { idField: 'uid' }).pipe(
-      map((d: any) => (d as UserProfile) ?? null)
+      map((raw: any) => {
+        if (!raw) return null;
+
+        const v = raw.createdAt;
+        let createdAt: Date | null = null;
+
+        if (v instanceof Timestamp) {
+          createdAt = v.toDate();
+        } else if (v?.toDate) {
+          createdAt = v.toDate();
+        } else if (v?.toMillis) {
+          createdAt = new Date(v.toMillis());
+        } else if (typeof v === 'number') {
+          createdAt = new Date(v > 1e12 ? v : v * 1000);
+        } else if (typeof v === 'string') {
+          const t = Date.parse(v);
+          createdAt = isNaN(t) ? null : new Date(t);
+        }
+
+        return { ...raw, createdAt } as UserProfile;
+      })
     );
   }
 

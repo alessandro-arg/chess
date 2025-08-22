@@ -24,6 +24,7 @@ import { PresenceService } from '../../presence.service';
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent {
+  currentUser: UserProfile | null = null;
   displayName: string | null = null;
   photoURL: string | null = null;
   uid: string | null = null;
@@ -53,6 +54,15 @@ export class DashboardComponent {
       this.uid = user?.uid ?? null;
       this.displayName = user?.displayName ?? user?.email ?? null;
       this.photoURL = user?.photoURL ?? '../../../assets/user.png';
+      this.currentUser = user
+        ? {
+            uid: user.uid,
+            displayName: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+            createdAt: null,
+          }
+        : null;
     });
     this.auth.user$.subscribe(async (user) => {
       if (!user) return;
@@ -144,6 +154,12 @@ export class DashboardComponent {
 
   closeFriendsModal() {
     this.showFriendsModal = false;
+  }
+
+  openSettings(): void {
+    const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
+    if (!uid) return;
+    this.router.navigate(['/', uid, 'settings']);
   }
 
   async logout(): Promise<void> {

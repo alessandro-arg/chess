@@ -1,0 +1,84 @@
+<!-- Support View -->
+<div class="min-h-screen bg-steel-bg">
+  <div
+    class="fixed top-10 right-10 w-32 h-32 bg-steel-primary/5 rounded-full blur-3xl pointer-events-none"
+  ></div>
+  <div
+    class="fixed bottom-20 left-15 w-24 h-24 bg-steel-accent/5 rounded-full blur-2xl pointer-events-none"
+  ></div>
+
+  <!-- Full screen container -->
+  <div class="w-full min-w-[320px] mx-auto">
+    <!-- Header with title and back button -->
+    <div
+      class="sticky top-0 z-10 bg-steel-secondary/90 backdrop-blur-lg border-b border-steel-primary/20"
+    >
+      <div
+        class="max-w-2xl mx-auto px-4 py-6 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            (click)="backToSettings()"
+            class="p-2 rounded-lg hover:bg-steel-bg/30 focus:outline-none focus:ring-2 focus:ring-steel-accent transition-colors"
+            aria-label="Back to settings"
+          >
+            <svg
+              class="w-5 h-5 text-steel-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <h1 class="text-xl font-semibold text-white">Support</h1>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="bg-steel-secondary/50 backdrop-blur-xl rounded-2xl border border-steel-primary/20 shadow-2xl p-6"
+    >
+      <div class="space-y-6">
+        <h3 class="text-2xl font-bold text-white">Write me an email</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-3"
+              >Subject</label
+            >
+            <input
+              type="text"
+              class="w-full px-4 py-3 bg-steel-bg/40 border border-steel-primary/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-steel-accent focus:border-transparent transition-colors"
+              placeholder="How can we help?"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-3"
+              >Message</label
+            >
+            <textarea
+              rows="5"
+              class="w-full px-4 py-3 bg-steel-bg/40 border border-steel-primary/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-steel-accent focus:border-transparent resize-none transition-colors"
+              placeholder="Describe your issue or question..."
+            ></textarea>
+          </div>
+
+          <div class="pt-4">
+            <button
+              class="w-full bg-steel-accent hover:bg-steel-primary text-white font-semibold py-3 px-6 rounded-xl focus:outline-none focus:ring-2 focus:ring-steel-accent transition-colors shadow-lg"
+            >
+              Send Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

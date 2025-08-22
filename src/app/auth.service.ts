@@ -2,7 +2,13 @@ import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Auth } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import {
   initializeApp as initializeFirebaseApp,
   deleteApp,
@@ -72,18 +78,31 @@ export class AuthService {
 
   private async ensureUserDocument(user: User): Promise<void> {
     const ref = doc(this.firestore, 'users', user.uid);
-    await setDoc(
-      ref,
-      {
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      await setDoc(ref, {
         uid: user.uid,
         displayName: user.displayName ?? null,
         email: user.email ?? null,
         photoURL: user.photoURL ?? null,
-        lastLoginAt: serverTimestamp(),
         createdAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+        lastLoginAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(ref, {
+        displayName: user.displayName ?? null,
+        email: user.email ?? null,
+        photoURL: user.photoURL ?? null,
+        lastLoginAt: serverTimestamp(),
+      });
+      const data = snap.data() as any;
+      if (!data.createdAt && user.metadata?.creationTime) {
+        await updateDoc(ref, {
+          createdAt: new Date(user.metadata.creationTime),
+        });
+      }
+    }
 
     await this.userService.upsertProfile(user.uid, {
       uid: user.uid,

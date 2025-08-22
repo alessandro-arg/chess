@@ -1,0 +1,46 @@
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Enhanced logout button styling */
+.logout-button:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.logout-button:hover .text-red-300 {
+  color: rgb(252 165 165);
+}
+
+.logout-button:active {
+  background-color: rgba(153, 27, 27, 0.3);
+}
+
+/* Custom scrollbar for better aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive enhancements for very small screens */
+@media (max-width: 375px) {
+  .prose p {
+    font-size: 0.875rem;
+  }
+
+  h3 {
+    font-size: 1.25rem !important;
+  }
+}

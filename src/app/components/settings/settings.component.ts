@@ -82,15 +82,23 @@ export class SettingsComponent implements OnInit {
   openSupport(): void {
     const uid = this.route.snapshot.paramMap.get('uid');
     if (!uid) return;
-    this.router.navigate(['/', uid, 'settings', 'profile-settings']);
+    this.router.navigate(['/', uid, 'settings', 'support']);
+  }
+
+  openPrivacyPolicy() {
+    const uid = this.route.snapshot.paramMap.get('uid');
+    if (!uid) return;
+    this.router.navigate(['/', uid, 'settings', 'privacy-policy']);
+  }
+
+  openImpressum() {
+    const uid = this.route.snapshot.paramMap.get('uid');
+    if (!uid) return;
+    this.router.navigate(['/', uid, 'settings', 'impressum']);
   }
 
   navigateToView(view: SettingsView): void {
     this.currentView = view;
-  }
-
-  onBack(): void {
-    this.currentView = 'main';
   }
 
   goBackToDashboard(): void {

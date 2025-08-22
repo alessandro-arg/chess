@@ -26,12 +26,10 @@ export class SupportComponent implements OnInit {
     private readonly auth: AuthService,
     private readonly userService: UserService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly storage: Storage
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    // uid can be on this route OR its parent (since it's a child of :uid/settings)
     const urlUid =
       this.route.snapshot.paramMap.get('uid') ??
       this.route.parent?.snapshot.paramMap.get('uid') ??
@@ -44,9 +42,8 @@ export class SupportComponent implements OnInit {
           return of(null);
         }
 
-        // Normalize wrong uid in URL
         if (urlUid && urlUid !== user.uid) {
-          this.router.navigate(['/', user.uid, 'settings', 'profile-settings']);
+          this.router.navigate(['/', user.uid, 'settings', 'support']);
           return of(null);
         }
 
@@ -65,8 +62,6 @@ export class SupportComponent implements OnInit {
                   ? new Date(user.metadata.creationTime)
                   : null,
               } as UserProfile);
-
-            // seed form fields
             this.displayName = profile.displayName ?? '';
             this.email = profile.email ?? '';
             this.photoURL = profile.photoURL ?? null;

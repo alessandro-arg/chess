@@ -1,1 +1,88 @@
-<p>impressum works!</p>
+<!-- Impressum View -->
+<div class="min-h-screen bg-steel-bg">
+  <div
+    class="fixed top-10 right-10 w-32 h-32 bg-steel-primary/5 rounded-full blur-3xl pointer-events-none"
+  ></div>
+  <div
+    class="fixed bottom-20 left-15 w-24 h-24 bg-steel-accent/5 rounded-full blur-2xl pointer-events-none"
+  ></div>
+
+  <!-- Full screen container -->
+  <div class="w-full min-w-[320px] mx-auto">
+    <!-- Header with title and back button -->
+    <div
+      class="sticky top-0 z-10 bg-steel-secondary/90 backdrop-blur-lg border-b border-steel-primary/20"
+    >
+      <div
+        class="max-w-2xl mx-auto px-4 py-6 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            (click)="back()"
+            class="p-2 rounded-lg hover:bg-steel-bg/30 focus:outline-none focus:ring-2 focus:ring-steel-accent transition-colors"
+            aria-label="Back"
+          >
+            <svg
+              class="w-5 h-5 text-steel-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <h1 class="text-xl font-semibold text-white">Impressum</h1>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div
+        class="bg-steel-secondary/50 backdrop-blur-xl rounded-2xl border border-steel-primary/20 shadow-2xl p-6"
+      >
+        <div class="prose prose-invert max-w-none">
+          <h3 class="text-2xl font-bold text-white mb-6">Impressum</h3>
+          <div class="text-gray-300 space-y-4 leading-relaxed">
+            <div>
+              <h4 class="font-semibold text-white text-lg mb-3">
+                General Information
+              </h4>
+              <p>
+                Chess² Online<br />
+                Kirchstrasse 2<br />
+                Hohentengen, 79801
+              </p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-white text-lg mb-3">Contact</h4>
+              <p>
+                Email:
+                <a
+                  href="mailto:contact@alessandro-argenziano.com"
+                  class="hover:text-white"
+                  >contact&#64;alessandro-argenziano.com</a
+                ><br />
+                Phone:
+                <a href="tel:+4916092965227" class="hover:text-white"
+                  >+49 (0)160 92965227</a
+                >
+              </p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-white text-lg mb-3">Legal</h4>
+              <p>
+                Responsible for content according to § 55 Abs. 2 RStV:<br />
+                Alessandro Argenziano
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

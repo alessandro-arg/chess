@@ -40,30 +40,6 @@
       </div>
     </div>
 
-    <!-- Back button for sub-views -->
-    <div *ngIf="currentView !== 'main'" class="max-w-2xl mx-auto px-4 pt-4">
-      <button
-        (click)="onBack()"
-        class="flex items-center gap-2 text-steel-accent hover:text-steel-primary focus:outline-none focus:ring-2 focus:ring-steel-accent rounded-lg p-2 transition-colors"
-        aria-label="Back to main settings"
-      >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        <span class="text-sm font-medium">Back</span>
-      </button>
-    </div>
-
     <!-- Main content container -->
     <div
       class="max-w-2xl mx-auto px-4 py-6 space-y-6"
@@ -167,7 +143,7 @@
             <!-- Privacy Policy -->
             <li role="menuitem">
               <button
-                (click)="navigateToView('privacy')"
+                (click)="openPrivacyPolicy()"
                 class="w-full flex items-center justify-between gap-4 p-4 sm:p-6 transition-colors hover:bg-steel-bg/20 focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-inset"
                 aria-label="Privacy Policy"
               >
@@ -210,7 +186,7 @@
             <!-- Impressum -->
             <li role="menuitem">
               <button
-                (click)="navigateToView('impressum')"
+                (click)="openImpressum()"
                 class="w-full flex items-center justify-between gap-4 p-4 sm:p-6 transition-colors hover:bg-steel-bg/20 focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-inset"
                 aria-label="Impressum"
               >
@@ -330,84 +306,6 @@
               </button>
             </li>
           </ul>
-        </div>
-      </div>
-
-      <!-- Privacy Policy View -->
-      <div
-        *ngIf="currentView === 'privacy'"
-        class="bg-steel-secondary/50 backdrop-blur-xl rounded-2xl border border-steel-primary/20 shadow-2xl p-6"
-      >
-        <div class="prose prose-invert max-w-none">
-          <h3 class="text-2xl font-bold text-white mb-6">Privacy Policy</h3>
-          <div class="text-gray-300 space-y-4 leading-relaxed">
-            <p>
-              This privacy policy describes how we collect, use, and protect
-              your personal information when you use our service.
-            </p>
-            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
-              Information We Collect
-            </h4>
-            <p>
-              We collect information you provide directly to us, such as when
-              you create an account, update your profile, or contact us for
-              support.
-            </p>
-            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
-              How We Use Your Information
-            </h4>
-            <p>
-              We use your information to provide, maintain, and improve our
-              services, communicate with you, and ensure the security of our
-              platform.
-            </p>
-            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
-              Data Protection
-            </h4>
-            <p>
-              We implement appropriate security measures to protect your
-              personal information against unauthorized access, alteration,
-              disclosure, or destruction.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Impressum View -->
-      <div
-        *ngIf="currentView === 'impressum'"
-        class="bg-steel-secondary/50 backdrop-blur-xl rounded-2xl border border-steel-primary/20 shadow-2xl p-6"
-      >
-        <div class="prose prose-invert max-w-none">
-          <h3 class="text-2xl font-bold text-white mb-6">Impressum</h3>
-          <div class="text-gray-300 space-y-4 leading-relaxed">
-            <div>
-              <h4 class="font-semibold text-white text-lg mb-3">
-                Company Information
-              </h4>
-              <p>
-                Your Company Name<br />
-                Your Address Line 1<br />
-                Your Address Line 2<br />
-                Your City, State ZIP
-              </p>
-            </div>
-            <div>
-              <h4 class="font-semibold text-white text-lg mb-3">Contact</h4>
-              <p>
-                Email: infoETyourcompany.com<br />
-                Phone: +1 (555) 123-4567
-              </p>
-            </div>
-            <div>
-              <h4 class="font-semibold text-white text-lg mb-3">Legal</h4>
-              <p>
-                Responsible for content according to § 55 Abs. 2 RStV:<br />
-                Your Name<br />
-                Your Address
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

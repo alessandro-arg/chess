@@ -1,1 +1,103 @@
-<p>privacy-policy works!</p>
+<!-- Privacy Policy View -->
+<div class="min-h-screen bg-steel-bg">
+  <div
+    class="fixed top-10 right-10 w-32 h-32 bg-steel-primary/5 rounded-full blur-3xl pointer-events-none"
+  ></div>
+  <div
+    class="fixed bottom-20 left-15 w-24 h-24 bg-steel-accent/5 rounded-full blur-2xl pointer-events-none"
+  ></div>
+
+  <!-- Full screen container -->
+  <div class="w-full min-w-[320px] mx-auto">
+    <!-- Header with title and back button -->
+    <div
+      class="sticky top-0 z-10 bg-steel-secondary/90 backdrop-blur-lg border-b border-steel-primary/20"
+    >
+      <div
+        class="max-w-2xl mx-auto px-4 py-6 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            (click)="back()"
+            class="p-2 rounded-lg hover:bg-steel-bg/30 focus:outline-none focus:ring-2 focus:ring-steel-accent transition-colors"
+            aria-label="Back"
+          >
+            <svg
+              class="w-5 h-5 text-steel-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <h1 class="text-xl font-semibold text-white">Privacy Policy</h1>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div
+        class="bg-steel-secondary/50 backdrop-blur-xl rounded-2xl border border-steel-primary/20 shadow-2xl p-6"
+      >
+        <div class="prose prose-invert max-w-none">
+          <h3 class="text-2xl font-bold text-white mb-6">
+            Privacy Policy for Chess² Online
+          </h3>
+          <div class="text-gray-300 space-y-4 leading-relaxed">
+            <p>Effective Date: August 22, 2025</p>
+            <p>
+              Chess² Online values your privacy. This app uses Firebase services
+              to provide account creation, login, and game functionality.
+            </p>
+            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
+              Information We Collect
+            </h4>
+            <p>
+              We collect information you provide directly to us, such as when
+              you create an account, update your profile, or contact us for
+              support.
+            </p>
+            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
+              How We Use Your Information
+            </h4>
+            <p>
+              Collected data is used only to enable gameplay, user
+              authentication, and saving game progress. We use your information
+              to provide, maintain, and improve our services, communicate with
+              you, and ensure the security of our platform.
+            </p>
+            <h4 class="font-semibold text-white text-lg mt-6 mb-3">
+              Data Protection
+            </h4>
+            <p>
+              We implement appropriate security measures to protect your
+              personal information against unauthorized access, alteration,
+              disclosure, or destruction. Your information is not sold or shared
+              with third parties, except as necessary to operate Firebase
+              services.
+            </p>
+            <h4 class="font-semibold text-white text-lg mt-6 mb-3">Security</h4>
+            <p>
+              Your data is stored securely in Firebase and protected by their
+              security standards.
+            </p>
+            <p class="mt-2">
+              If you have questions, contact:
+              <a
+                href="mailto:contact@alessandro-argenziano.com"
+                class="hover:text-white"
+                >contact&#64;alessandro-argenziano.com</a
+              >
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

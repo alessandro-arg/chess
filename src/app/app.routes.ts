@@ -6,11 +6,15 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { authGuard } from './auth.guard';
 import { ProfileSettingsComponent } from './components/settings/profile-settings/profile-settings.component';
 import { SupportComponent } from './components/settings/support/support.component';
+import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
+import { ImpressumComponent } from './components/impressum/impressum.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'privacy-policy', component: PrivacyPolicyComponent },
+  { path: 'impressum', component: ImpressumComponent },
   {
     path: ':uid/dashboard',
     component: DashboardComponent,
@@ -25,6 +29,16 @@ export const routes: Routes = [
     children: [
       { path: 'profile-settings', component: ProfileSettingsComponent },
       { path: 'support', component: SupportComponent },
+      {
+        path: 'privacy-policy',
+        component: PrivacyPolicyComponent,
+        data: { inSettings: true },
+      },
+      {
+        path: 'impressum',
+        component: ImpressumComponent,
+        data: { inSettings: true },
+      },
     ],
   },
   { path: '**', redirectTo: 'login' },

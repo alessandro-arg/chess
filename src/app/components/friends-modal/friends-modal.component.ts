@@ -4,8 +4,6 @@ import {
   Input,
   Output,
   signal,
-  computed,
-  effect,
   OnInit,
   OnChanges,
   SimpleChanges,
@@ -41,9 +39,9 @@ export class FriendsModalComponent implements OnInit, OnChanges {
     >
   >([]);
 
-  myFriends$ = this.friend.myFriends$();
-  incoming$ = this.friend.incomingPending$();
-  outgoing$ = this.friend.outgoingPending$();
+  myFriends$: Observable<Friendship[]> = of([]);
+  incoming$: Observable<Friendship[]> = of([]);
+  outgoing$: Observable<Friendship[]> = of([]);
 
   private profileCache = new Map<string, Observable<UserProfile | null>>();
 

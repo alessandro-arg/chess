@@ -1,0 +1,361 @@
+<div
+  class="flex flex-col items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4"
+>
+  <!-- Game Header -->
+  <div class="w-full max-w-2xl mb-6">
+    <div class="bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-600">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center shadow-lg"
+          >
+            <span class="text-slate-300 font-bold">B</span>
+          </div>
+          <div>
+            <div class="text-slate-200 font-semibold">Black Player</div>
+            <div class="text-slate-400 text-sm">Rating: 1200</div>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-slate-300 font-mono text-lg">15:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chess Board Container -->
+  <div class="relative">
+    <div class="bg-slate-800 p-4 rounded-xl shadow-2xl border border-slate-600">
+      <div class="flex">
+        <!-- Rank Labels (Left only) -->
+        <div class="flex flex-col justify-around w-8 mr-2">
+          <div
+            *ngFor="let rank of ranks"
+            class="h-10 sm:h-12 md:h-14 lg:h-16 flex items-center justify-center text-slate-400 text-sm font-mono"
+          >
+            {{ rank }}
+          </div>
+        </div>
+
+        <!-- Main Board -->
+        <div class="relative">
+          <div
+            class="grid grid-cols-8 gap-0 rounded-lg overflow-hidden shadow-inner border-2 border-slate-600"
+          >
+            <div *ngFor="let row of board; let rowIndex = index">
+              <div
+                *ngFor="let square of row; let colIndex = index"
+                [class]="getSquareClasses(rowIndex, colIndex)"
+                (click)="handleSquareClick(rowIndex, colIndex)"
+                style="
+                  width: clamp(40px, 10vw, 80px);
+                  height: clamp(40px, 10vw, 80px);
+                "
+              >
+                <span
+                  *ngIf="square"
+                  class="text-2xl sm:text-3xl md:text-4xl select-none transition-transform duration-200 hover:scale-110 drop-shadow-lg"
+                  style="filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))"
+                >
+                  {{ pieceSymbols[square] }}
+                </span>
+
+                <!-- Coordinate Labels (bottom row only) -->
+                <div
+                  *ngIf="rowIndex === 7"
+                  class="absolute bottom-1 right-1 text-xs font-mono text-slate-500"
+                >
+                  {{ files[colIndex] }}
+                </div>
+
+                <div
+                  *ngIf="colIndex === 0"
+                  class="absolute bottom-1 left-1 text-xs font-mono text-slate-500"
+                >
+                  {{ ranks[rowIndex] }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- File Labels (Bottom) -->
+          <div class="flex justify-around mt-2">
+            <div
+              *ngFor="let file of files"
+              class="w-10 sm:w-12 md:w-14 lg:w-16 flex items-center justify-center text-slate-400 text-sm font-mono"
+            >
+              {{ file }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Footer -->
+  <div class="w-full max-w-2xl mt-6">
+    <div class="bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-600">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center shadow-lg"
+          >
+            <span class="text-slate-200 font-bold">W</span>
+          </div>
+          <div>
+            <div class="text-slate-200 font-semibold">White Player</div>
+            <div class="text-slate-400 text-sm">Rating: 1150</div>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-slate-300 font-mono text-lg">15:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Menu Button -->
+  <div class="w-full max-w-2xl mt-6 flex justify-center">
+    <button
+      (click)="toggleGameMenu()"
+      class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-6 py-3 rounded-lg shadow-lg border border-slate-600 transition-all duration-200 hover:shadow-xl font-semibold flex items-center gap-2"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+        ></path>
+      </svg>
+      Game Menu
+    </button>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="w-full max-w-2xl mt-4">
+    <div class="bg-slate-800 rounded-lg shadow-lg p-4 border border-slate-600">
+      <div class="text-center text-slate-300">
+        <span class="font-semibold">White to move</span>
+        <span class="mx-2">•</span>
+        <span class="text-slate-400">Click a piece to select it</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu Overlay -->
+  <div
+    *ngIf="isGameMenuOpen"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300"
+    (click)="closeGameMenu()"
+  ></div>
+
+  <!-- iOS-style Slide-up Menu -->
+  <div
+    class="sm:hidden fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-out transform"
+    [class.translate-y-full]="!isGameMenuOpen"
+    [class.translate-y-0]="isGameMenuOpen"
+  >
+    <div
+      class="bg-slate-800 rounded-t-3xl shadow-2xl border-t border-slate-600 p-6"
+    >
+      <!-- Menu Handle -->
+      <div class="w-12 h-1 bg-slate-500 rounded-full mx-auto mb-6"></div>
+
+      <!-- Menu Title -->
+      <div class="text-center mb-6">
+        <h3 class="text-slate-200 text-lg font-semibold">Game Options</h3>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="space-y-3">
+        <button
+          (click)="takeBack()"
+          class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 p-4 rounded-xl shadow-lg border border-slate-600 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 17l-5-5m0 0l5-5m-5 5h12"
+            ></path>
+          </svg>
+          Take Back
+        </button>
+
+        <button
+          (click)="offerDraw()"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl shadow-lg border border-emerald-500 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          Offer Draw
+        </button>
+
+        <button
+          (click)="resign()"
+          class="w-full bg-red-600 hover:bg-red-500 text-white p-4 rounded-xl shadow-lg border border-red-500 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+          Resign
+        </button>
+      </div>
+
+      <!-- Cancel Button -->
+      <div class="mt-6 pt-4 border-t border-slate-600">
+        <button
+          (click)="closeGameMenu()"
+          class="w-full bg-slate-600 hover:bg-slate-500 text-slate-200 p-4 rounded-xl shadow-lg border border-slate-500 transition-all duration-200 font-semibold"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop: Centered Modal (sm and above) -->
+  <div
+    class="hidden sm:flex fixed inset-0 z-50 items-center justify-center p-4 transition-all duration-300"
+    [class.opacity-0]="!isGameMenuOpen"
+    [class.opacity-100]="isGameMenuOpen"
+    [class.pointer-events-none]="!isGameMenuOpen"
+    [class.pointer-events-auto]="isGameMenuOpen"
+  >
+    <div
+      class="bg-slate-800 rounded-xl shadow-2xl border border-slate-600 p-6 w-full max-w-md transition-all duration-300 transform"
+      [class.scale-95]="!isGameMenuOpen"
+      [class.scale-100]="isGameMenuOpen"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-slate-200 text-xl font-semibold">Game Options</h3>
+        <button
+          (click)="closeGameMenu()"
+          class="text-slate-400 hover:text-slate-200 transition-colors duration-200"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="space-y-3">
+        <button
+          (click)="takeBack()"
+          class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 p-4 rounded-lg shadow-lg border border-slate-600 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 17l-5-5m0 0l5-5m-5 5h12"
+            ></path>
+          </svg>
+          Take Back
+        </button>
+
+        <button
+          (click)="offerDraw()"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-lg shadow-lg border border-emerald-500 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          Offer Draw
+        </button>
+
+        <button
+          (click)="resign()"
+          class="w-full bg-red-600 hover:bg-red-500 text-white p-4 rounded-lg shadow-lg border border-red-500 transition-all duration-200 hover:shadow-xl font-semibold flex items-center justify-center gap-3"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+          Resign
+        </button>
+      </div>
+
+      <!-- Cancel Button -->
+      <div class="mt-6 pt-4 border-t border-slate-600">
+        <button
+          (click)="closeGameMenu()"
+          class="w-full bg-slate-600 hover:bg-slate-500 text-slate-200 p-3 rounded-lg shadow-lg border border-slate-500 transition-all duration-200 font-semibold"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

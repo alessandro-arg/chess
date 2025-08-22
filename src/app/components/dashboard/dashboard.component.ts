@@ -162,6 +162,12 @@ export class DashboardComponent {
     this.router.navigate(['/', uid, 'settings']);
   }
 
+  openTestBoard(): void {
+    const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
+    if (!uid) return;
+    this.router.navigate(['/', uid, 'chess-board']);
+  }
+
   async logout(): Promise<void> {
     await this.auth.logout();
     this.router.navigateByUrl('/login');

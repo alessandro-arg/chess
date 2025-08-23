@@ -130,6 +130,26 @@ export class NotificationService {
     });
   }
 
+  lastSeenGameInviteAt$() {
+    return new Promise<import('rxjs').Observable<number | null>>((resolve) => {
+      (async () => {
+        const { authState } = await import('@angular/fire/auth');
+        authState(this.auth).subscribe((user) => {
+          if (!user) return;
+          const ref = doc(this.firestore, 'users', user.uid);
+          resolve(
+            docData(ref).pipe(
+              map(
+                (u: any) =>
+                  u?.notifications?.gameInviteLastSeenAt?.toMillis?.() ?? null
+              )
+            )
+          );
+        });
+      })();
+    });
+  }
+
   async markFriendRequestsSeen(): Promise<void> {
     const uid = this.auth.currentUser?.uid;
     if (!uid) return;
@@ -138,6 +158,22 @@ export class NotificationService {
       ref,
       {
         notifications: { friendReqLastSeenAt: serverTimestamp() },
+      },
+      { merge: true }
+    );
+  }
+
+  async markAllNotificationsSeen(): Promise<void> {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return;
+    const ref = doc(this.firestore, 'users', uid);
+    await setDoc(
+      ref,
+      {
+        notifications: {
+          friendReqLastSeenAt: serverTimestamp(),
+          gameInviteLastSeenAt: serverTimestamp(),
+        },
       },
       { merge: true }
     );

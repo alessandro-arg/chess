@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../auth.service';
 import { FriendsModalComponent } from '../friends-modal/friends-modal.component';
 import {
+  BehaviorSubject,
   combineLatest,
   map,
   Observable,
@@ -46,6 +47,8 @@ export class DashboardComponent {
   previousOutgoing?: GameInvite[] = [];
   outgoingInvitesSub?: any;
 
+  private localSeenAt$ = new BehaviorSubject<number>(0);
+
   constructor(
     private readonly auth: AuthService,
     private readonly route: ActivatedRoute,
@@ -72,16 +75,46 @@ export class DashboardComponent {
     this.auth.user$.subscribe(async (user) => {
       if (!user) return;
       this.incoming$ = this.friend.incomingPending$();
-      const lastSeen$ = await this.notifier.lastSeenFriendReqAt$();
+      const lastSeenFriend$ = await this.notifier.lastSeenFriendReqAt$();
 
-      this.unreadCount$ = combineLatest([this.incoming$, lastSeen$]).pipe(
-        map(([incoming, lastSeen]) => {
-          const last = lastSeen ?? 0;
-          return incoming.filter((r) => {
-            const m = (r as any)?.updatedAt?.toMillis?.() ?? 0;
-            return m > last;
-          }).length;
-        })
+      this.invitesIncoming$ = this.notifier.incomingGameInvites$();
+      const lastSeenGame$ = await this.notifier.lastSeenGameInviteAt$();
+
+      this.unreadCount$ = combineLatest([
+        this.incoming$,
+        lastSeenFriend$,
+        this.invitesIncoming$,
+        lastSeenGame$,
+        this.localSeenAt$,
+      ]).pipe(
+        map(
+          ([
+            incomingFriends,
+            lastFriend,
+            incomingInvites,
+            lastGame,
+            localSeen,
+          ]) => {
+            const seenF = Math.max(lastFriend ?? 0, localSeen ?? 0);
+            const seenG = Math.max(lastGame ?? 0, localSeen ?? 0);
+
+            const friendUnread = (incomingFriends || []).filter((r: any) => {
+              const m = r?.updatedAt?.toMillis?.() ?? 0;
+              return m > seenF;
+            }).length;
+
+            const gameUnread = (incomingInvites || []).filter((inv: any) => {
+              const t =
+                inv?.createdAt?.toMillis?.() ??
+                inv?.updatedAt?.toMillis?.() ??
+                0;
+              return t > seenG;
+            }).length;
+
+            return friendUnread + gameUnread;
+          }
+        ),
+        shareReplay({ bufferSize: 1, refCount: true })
       );
     });
 
@@ -162,7 +195,8 @@ export class DashboardComponent {
   async toggleNotifications() {
     this.showNotifPanel = !this.showNotifPanel;
     if (this.showNotifPanel) {
-      await this.notifier.markFriendRequestsSeen();
+      this.localSeenAt$.next(Date.now());
+      await this.notifier.markAllNotificationsSeen();
     }
   }
 
@@ -228,7 +262,6 @@ export class DashboardComponent {
       if (!uid) return;
 
       const inviteId = `${uid}_${f.uid}`;
-      // Go straight to the board in "waiting" mode
       this.router.navigate([`/${uid}/chess-board`], {
         queryParams: { invite: inviteId, vs: f.uid },
       });

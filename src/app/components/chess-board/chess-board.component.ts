@@ -159,11 +159,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   get myEloDisplay(): string {
-    return this.myElo != null ? String(this.myElo) : '—';
+    return this.myElo != null ? String(this.myElo) : 'null';
   }
 
   get oppEloDisplay(): string {
-    return this.oppElo != null ? String(this.oppElo) : '—';
+    return this.oppElo != null ? String(this.oppElo) : 'null';
   }
 
   private async onInviteChange(inv: GameInvite | null) {
@@ -259,6 +259,10 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     if (message) alert(message);
     // IMPORTANT: go to '/:uid/dashboard' (matches your routes)
     this.router.navigate([`/${this.myUid}/dashboard`]);
+  }
+
+  getCoordTextClass(row: number, col: number): string {
+    return this.isLightSquare(row, col) ? 'text-slate-700' : 'text-white';
   }
 
   isLightSquare(row: number, col: number): boolean {

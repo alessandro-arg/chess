@@ -1,8 +1,8 @@
 <div
-  class="flex flex-col items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4"
+  class="flex flex-col items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-10"
 >
   <!-- Game Header -->
-  <div class="w-full max-w-2xl mb-6 flex items-center">
+  <div class="w-full max-w-2xl mb-6 flex items-center p-4">
     <div
       class="bg-slate-800 rounded-lg flex-1 shadow-2xl px-6 py-4 border border-slate-600"
     >
@@ -40,18 +40,10 @@
 
   <!-- Chess Board Container -->
   <div class="relative">
-    <div class="bg-slate-800 p-4 rounded-xl shadow-2xl border border-slate-600">
+    <div
+      class="bg-slate-800 sm:p-4 rounded-xl shadow-2xl border border-slate-600"
+    >
       <div class="flex">
-        <!-- Rank Labels (Left only) -->
-        <div class="flex flex-col justify-around w-8 mr-2">
-          <div
-            *ngFor="let rank of ranks"
-            class="h-10 sm:h-12 md:h-14 lg:h-16 flex items-center justify-center text-slate-400 text-sm font-mono"
-          >
-            {{ rank }}
-          </div>
-        </div>
-
         <!-- Main Board -->
         <div class="relative">
           <div
@@ -63,8 +55,8 @@
                 [class]="getSquareClasses(rowIndex, colIndex)"
                 (click)="handleSquareClick(rowIndex, colIndex)"
                 style="
-                  width: clamp(40px, 10vw, 80px);
-                  height: clamp(40px, 10vw, 80px);
+                  width: clamp(50px, 10vw, 100px);
+                  height: clamp(50px, 10vw, 100px);
                 "
               >
                 <span
@@ -78,28 +70,20 @@
                 <!-- Coordinate Labels (bottom row only) -->
                 <div
                   *ngIf="rowIndex === 7"
-                  class="absolute bottom-1 right-1 text-xs font-mono text-slate-500"
+                  class="absolute bottom-0 right-1 text-base font-semibold"
+                  [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ files[colIndex] }}
                 </div>
 
                 <div
                   *ngIf="colIndex === 0"
-                  class="absolute top-1 left-1 text-xs font-mono text-slate-500"
+                  class="absolute top-0 left-1 text-base font-semibold"
+                  [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ ranks[rowIndex] }}
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- File Labels (Bottom) -->
-          <div class="flex justify-around mt-2">
-            <div
-              *ngFor="let file of files"
-              class="w-10 sm:w-12 md:w-14 lg:w-16 flex items-center justify-center text-slate-400 text-sm font-mono"
-            >
-              {{ file }}
             </div>
           </div>
         </div>
@@ -108,7 +92,9 @@
   </div>
 
   <!-- Game Footer -->
-  <div class="w-full max-w-2xl mt-6 flex items-center gap-5 justify-between">
+  <div
+    class="w-full max-w-2xl mt-6 flex items-center gap-5 justify-between p-4"
+  >
     <div
       class="w-full bg-slate-800 rounded-lg shadow-2xl px-6 py-4 border border-slate-600 flex gap-4 justify-between"
     >

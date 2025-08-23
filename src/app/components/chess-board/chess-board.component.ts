@@ -28,6 +28,19 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   heartbeat?: any;
   participantsEnriched: Array<{ uid: string; name: string }> = [];
 
+  myColor: 'white' | 'black' | null = null;
+  oppUid: string | null = null;
+
+  myName = 'You';
+  myPhotoURL = '../../../assets/user.png';
+  myElo: number | null = null;
+
+  oppName = 'Opponent';
+  oppPhotoURL = '../../../assets/user.png';
+  oppElo: number | null = null;
+
+  profilesSub?: Subscription;
+
   board: (string | null)[][] = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -114,9 +127,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.inviteSub?.unsubscribe();
     this.gameSub?.unsubscribe();
-    if (this.gameId && this.myUid) {
+    this.profilesSub?.unsubscribe();
+    if (this.gameId && this.myUid)
       this.notifier.leaveGame(this.gameId, this.myUid).catch(() => {});
-    }
     if (this.heartbeat) clearInterval(this.heartbeat);
     this.participantsSub?.unsubscribe();
   }
@@ -127,6 +140,30 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   get participantsDisplay(): string {
     return this.participantsEnriched.map((p) => p.name).join(' vs ');
+  }
+
+  get opponentColor(): 'white' | 'black' | null {
+    return this.myColor === 'white'
+      ? 'black'
+      : this.myColor === 'black'
+      ? 'white'
+      : null;
+  }
+
+  get myColorBadge(): string {
+    return this.myColor === 'white' ? 'White' : 'Black';
+  }
+
+  get oppColorBadge(): string {
+    return this.opponentColor === 'white' ? 'White' : 'Black';
+  }
+
+  get myEloDisplay(): string {
+    return this.myElo != null ? String(this.myElo) : '—';
+  }
+
+  get oppEloDisplay(): string {
+    return this.oppElo != null ? String(this.oppElo) : '—';
   }
 
   private async onInviteChange(inv: GameInvite | null) {
@@ -151,22 +188,35 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     if (!game) return;
 
     // Join presence once when we know gameId & myUid
-    if (this.gameId && this.myUid) {
-      this.notifier
-        .joinGame(this.gameId, this.myUid)
-        .then(() =>
-          console.log('[presence/joined]', this.myUid, 'game:', this.gameId)
-        )
-        .catch(console.error);
+    if (this.gameId && this.myUid && game.players) {
+      const white = game.players.white;
+      const black = game.players.black;
 
-      // Optional heartbeat every 30s
+      this.myColor = white === this.myUid ? 'white' : 'black';
+      this.oppUid = this.myColor === 'white' ? black : white;
+
+      // Join presence (you already have this)
+      this.notifier.joinGame(this.gameId, this.myUid).catch(console.error);
       if (!this.heartbeat) {
         this.heartbeat = setInterval(() => {
-          if (this.gameId && this.myUid) {
+          if (this.gameId && this.myUid)
             this.notifier.touchGame(this.gameId, this.myUid).catch(() => {});
-          }
         }, 30_000);
       }
+
+      this.profilesSub?.unsubscribe();
+      this.profilesSub = combineLatest([
+        this.userService.userProfile$(this.myUid),
+        this.oppUid ? this.userService.userProfile$(this.oppUid) : of(null),
+      ]).subscribe(([me, opp]) => {
+        this.myName = me?.displayName || me?.email || 'You';
+        this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
+        this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
+
+        this.oppName = opp?.displayName || opp?.email || 'Opponent';
+        this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
+        this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+      });
 
       // Watch participants and log with profile names
       this.participantsSub?.unsubscribe();

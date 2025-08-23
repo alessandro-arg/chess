@@ -11,11 +11,24 @@
           <div
             class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center shadow-lg"
           >
-            <span class="text-slate-300 font-bold">B</span>
+            <img
+              [src]="oppPhotoURL"
+              alt="Opponent avatar"
+              class="w-full h-full object-cover"
+            />
           </div>
           <div>
-            <div class="text-slate-200 font-semibold">Black Player</div>
-            <div class="text-slate-400 text-sm">Rating: 1200</div>
+            <div class="text-slate-200 font-semibold">
+              {{ oppName }}
+              <span
+                class="ml-2 inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-500 text-slate-300"
+              >
+                {{ oppColorBadge }}
+              </span>
+            </div>
+            <div class="text-slate-400 text-sm">
+              Rating: {{ oppEloDisplay }}
+            </div>
           </div>
         </div>
         <div class="text-center">
@@ -37,15 +50,6 @@
           >
             {{ rank }}
           </div>
-        </div>
-
-        <!-- Who's in this game -->
-        <div
-          *ngIf="mode === 'game' && inRoomCount"
-          class="fixed top-3 left-1/2 -translate-x-1/2 z-40 bg-slate-800/90 border border-slate-600 rounded-full px-4 py-1 text-sm text-slate-200 shadow-lg"
-        >
-          In room ({{ inRoomCount }}/2):
-          <span class="text-slate-300">{{ participantsDisplay }}</span>
         </div>
 
         <!-- Main Board -->
@@ -113,11 +117,22 @@
           <div
             class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center shadow-lg"
           >
-            <span class="text-slate-200 font-bold">W</span>
+            <img
+              [src]="myPhotoURL"
+              alt="My avatar"
+              class="w-full h-full object-cover"
+            />
           </div>
           <div>
-            <div class="text-slate-200 font-semibold">White Player</div>
-            <div class="text-slate-400 text-sm">Rating: 1150</div>
+            <div class="text-slate-200 font-semibold">
+              {{ myName }}
+              <span
+                class="ml-2 inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-500 text-slate-300"
+              >
+                {{ myColorBadge }}
+              </span>
+            </div>
+            <div class="text-slate-400 text-sm">Rating: {{ myEloDisplay }}</div>
           </div>
         </div>
       </div>
@@ -144,17 +159,6 @@
             ></path>
           </svg>
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Status Bar -->
-  <div class="w-full max-w-2xl mt-4">
-    <div class="bg-slate-800 rounded-lg shadow-lg p-4 border border-slate-600">
-      <div class="text-center text-slate-300">
-        <span class="font-semibold">White to move</span>
-        <span class="mx-2">•</span>
-        <span class="text-slate-400">Click a piece to select it</span>
       </div>
     </div>
   </div>

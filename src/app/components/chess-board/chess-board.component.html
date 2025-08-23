@@ -39,6 +39,15 @@
           </div>
         </div>
 
+        <!-- Who's in this game -->
+        <div
+          *ngIf="mode === 'game' && inRoomCount"
+          class="fixed top-3 left-1/2 -translate-x-1/2 z-40 bg-slate-800/90 border border-slate-600 rounded-full px-4 py-1 text-sm text-slate-200 shadow-lg"
+        >
+          In room ({{ inRoomCount }}/2):
+          <span class="text-slate-300">{{ participantsDisplay }}</span>
+        </div>
+
         <!-- Main Board -->
         <div class="relative">
           <div
@@ -72,7 +81,7 @@
 
                 <div
                   *ngIf="colIndex === 0"
-                  class="absolute bottom-1 left-1 text-xs font-mono text-slate-500"
+                  class="absolute top-1 left-1 text-xs font-mono text-slate-500"
                 >
                   {{ ranks[rowIndex] }}
                 </div>
@@ -146,6 +155,36 @@
         <span class="font-semibold">White to move</span>
         <span class="mx-2">•</span>
         <span class="text-slate-400">Click a piece to select it</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting Modal when sender is waiting for accept/decline -->
+  <div
+    *ngIf="mode === 'waiting' && waiting"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+  >
+    <div
+      class="bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl w-full max-w-md p-6"
+    >
+      <div class="flex items-center gap-3 mb-2">
+        <img src="../../../assets/swords.png" class="w-6 h-6" alt="swords" />
+        <h3 class="text-slate-100 text-lg font-semibold">
+          Waiting for opponent…
+        </h3>
+      </div>
+      <p class="text-slate-300 text-sm mb-5">
+        We've sent your game invitation<span *ngIf="vsUid">
+          to <strong>{{ vsUid }}</strong></span
+        >. Stay on this screen while they accept or decline.
+      </p>
+      <div class="flex items-center justify-end gap-3">
+        <button
+          class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-500 text-slate-200"
+          (click)="cancelWaiting()"
+        >
+          Cancel invitation
+        </button>
       </div>
     </div>
   </div>

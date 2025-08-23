@@ -5,9 +5,43 @@ import {
   docData,
   setDoc,
   serverTimestamp,
+  collection,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  addDoc,
 } from '@angular/fire/firestore';
 import { Auth } from '@angular/fire/auth';
-import { map, of, switchMap } from 'rxjs';
+import { map, Observable, of, switchMap } from 'rxjs';
+
+export interface GameInvite {
+  id: string;
+  fromUid: string;
+  toUid: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  gameId?: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface GameDoc {
+  id: string;
+  players: { white: string | null; black: string | null; both: string[] };
+  status: 'waiting' | 'active' | 'finished';
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface GameParticipant {
+  uid: string;
+  joinedAt: any;
+  lastActiveAt: any;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -15,6 +49,66 @@ import { map, of, switchMap } from 'rxjs';
 export class NotificationService {
   private firestore = inject(Firestore);
   private auth = inject(Auth);
+
+  invite$(inviteId: string): Observable<GameInvite | null> {
+    const ref = doc(this.firestore, 'gameInvites', inviteId);
+    return new Observable((sub) => {
+      const unsub = onSnapshot(
+        ref,
+        (snap) => {
+          sub.next(snap.exists() ? (snap.data() as GameInvite) : null);
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  game$(gameId: string): Observable<GameDoc | null> {
+    const ref = doc(this.firestore, 'games', gameId);
+    return new Observable((sub) => {
+      const unsub = onSnapshot(
+        ref,
+        (snap) => {
+          if (!snap.exists()) {
+            sub.next(null);
+            return;
+          }
+          const data = snap.data() as any;
+          sub.next({ id: snap.id, ...data } as GameDoc);
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  participants$(gameId: string): Observable<GameParticipant[]> {
+    const colRef = collection(this.firestore, 'games', gameId, 'participants');
+    return new Observable<GameParticipant[]>((sub) => {
+      const unsub = onSnapshot(
+        colRef,
+        (snap) => {
+          sub.next(snap.docs.map((d) => d.data() as GameParticipant));
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  async joinGame(gameId: string, uid: string): Promise<void> {
+    const ref = doc(this.firestore, 'games', gameId, 'participants', uid);
+    await setDoc(
+      ref,
+      {
+        uid,
+        joinedAt: serverTimestamp(),
+        lastActiveAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
 
   lastSeenFriendReqAt$() {
     return new Promise<import('rxjs').Observable<number | null>>((resolve) => {
@@ -47,5 +141,120 @@ export class NotificationService {
       },
       { merge: true }
     );
+  }
+
+  async sendGameInvite(toUid: string): Promise<void> {
+    const fromUid = this.auth.currentUser?.uid;
+    if (!fromUid || !toUid || fromUid === toUid) return;
+    const id = `${fromUid}_${toUid}`;
+    const ref = doc(this.firestore, 'gameInvites', id);
+
+    await setDoc(
+      ref,
+      {
+        id,
+        fromUid,
+        toUid,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  incomingGameInvites$(): Observable<GameInvite[]> {
+    const user = this.auth.currentUser;
+    if (!user) return of([]);
+    const col = collection(this.firestore, 'gameInvites');
+    const q = query(
+      col,
+      where('toUid', '==', user.uid),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+    return new Observable<GameInvite[]>((sub) => {
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          sub.next(snap.docs.map((d) => d.data() as GameInvite));
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  outgoingGameInvites$(): Observable<GameInvite[]> {
+    const user = this.auth.currentUser;
+    if (!user) return of([]);
+    const col = collection(this.firestore, 'gameInvites');
+    const q = query(
+      col,
+      where('fromUid', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+    return new Observable<GameInvite[]>((sub) => {
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          sub.next(snap.docs.map((d) => d.data() as GameInvite));
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  async acceptInviteAndCreateGame(inviteId: string): Promise<string> {
+    const ref = doc(this.firestore, 'gameInvites', inviteId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error('Invite not found');
+    const inv = snap.data() as GameInvite;
+
+    const me = this.auth.currentUser?.uid;
+    if (!me || inv.toUid !== me) throw new Error('Not allowed');
+
+    const gamesCol = collection(this.firestore, 'games');
+    const gameRef = await addDoc(gamesCol, {
+      players: {
+        white: inv.fromUid,
+        black: inv.toUid,
+        both: [inv.fromUid, inv.toUid],
+      },
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await updateDoc(ref, {
+      status: 'accepted',
+      gameId: gameRef.id,
+      updatedAt: serverTimestamp(),
+    });
+
+    return gameRef.id;
+  }
+
+  async cancelInvite(inviteId: string): Promise<void> {
+    const ref = doc(this.firestore, 'gameInvites', inviteId);
+    await updateDoc(ref, { status: 'cancelled', updatedAt: serverTimestamp() });
+  }
+
+  async declineInvite(inviteId: string): Promise<void> {
+    const ref = doc(this.firestore, 'gameInvites', inviteId);
+    await updateDoc(ref, { status: 'declined', updatedAt: serverTimestamp() });
+  }
+
+  async touchGame(gameId: string, uid: string): Promise<void> {
+    const ref = doc(this.firestore, 'games', gameId, 'participants', uid);
+    await setDoc(ref, { lastActiveAt: serverTimestamp() }, { merge: true });
+  }
+
+  async leaveGame(gameId: string, uid: string): Promise<void> {
+    const ref = doc(this.firestore, 'games', gameId, 'participants', uid);
+    await deleteDoc(ref);
   }
 }

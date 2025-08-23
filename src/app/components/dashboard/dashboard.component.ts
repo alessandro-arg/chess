@@ -11,8 +11,9 @@ import {
   shareReplay,
   switchMap,
 } from 'rxjs';
+import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { FriendService, Friendship } from '../../friend.service';
-import { NotificationService } from '../../notification.service';
+import { GameInvite, NotificationService } from '../../notification.service';
 import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
 
@@ -40,6 +41,10 @@ export class DashboardComponent {
     Array<{ uid: string; profile: UserProfile | null; online: boolean }>
   >;
   friendCount$?: Observable<number>;
+
+  invitesIncoming$?: Observable<GameInvite[]>;
+  previousOutgoing?: GameInvite[] = [];
+  outgoingInvitesSub?: any;
 
   constructor(
     private readonly auth: AuthService,
@@ -82,6 +87,22 @@ export class DashboardComponent {
 
     this.auth.user$.subscribe((user) => {
       if (!user) return;
+      this.invitesIncoming$ = this.notifier.incomingGameInvites$();
+      this.outgoingInvitesSub?.unsubscribe?.();
+      this.outgoingInvitesSub = this.notifier
+        .outgoingGameInvites$()
+        .subscribe((list) => {
+          const prev = this.previousOutgoing ?? [];
+          const declinedNow = list.filter(
+            (i) =>
+              i.status === 'declined' &&
+              !prev.some((p) => p.id === i.id && p.status === 'declined')
+          );
+          declinedNow.forEach((i) => {
+            alert('Your game request was declined.');
+          });
+          this.previousOutgoing = list;
+        });
 
       const friends$ = this.friend
         .myFriends$()
@@ -113,6 +134,10 @@ export class DashboardComponent {
         shareReplay({ bufferSize: 1, refCount: true })
       );
     });
+  }
+
+  ngOnDestroy() {
+    this.outgoingInvitesSub?.unsubscribe?.();
   }
 
   private profileCache = new Map<string, Observable<UserProfile | null>>();
@@ -184,5 +209,56 @@ export class DashboardComponent {
     const target = ev.target as HTMLElement;
     const inBell = target.closest?.('#notif-bell-wrap');
     if (!inBell) this.showNotifPanel = false;
+  }
+
+  async challenge(f: {
+    uid: string;
+    profile: UserProfile | null;
+    online: boolean;
+  }) {
+    if (!f?.uid) return;
+    if (!f.online) {
+      alert('Your friend is offline right now.');
+      return;
+    }
+
+    try {
+      await this.notifier.sendGameInvite(f.uid);
+      const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
+      if (!uid) return;
+
+      const inviteId = `${uid}_${f.uid}`;
+      // Go straight to the board in "waiting" mode
+      this.router.navigate([`/${uid}/chess-board`], {
+        queryParams: { invite: inviteId, vs: f.uid },
+      });
+    } catch (e) {
+      console.error(e);
+      alert('Could not send the challenge. Please try again.');
+    }
+  }
+
+  async onAcceptInvite(invite: { id: string; fromUid: string }) {
+    try {
+      const gameId = await this.notifier.acceptInviteAndCreateGame(invite.id);
+      const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
+      if (!uid) return;
+      this.router.navigate([`/${uid}/chess-board`], {
+        queryParams: { game: gameId },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async onDeclineInvite(invite: { id: string; fromUid: string }) {
+    try {
+      await this.notifier.declineInvite(invite.id);
+      // Notify sender: easiest is to rely on their outgoing stream to detect deletion and show a toast.
+      // Optional: you can also write a one-off "gameDeclined" notification doc to their user doc if you already have a system.
+      // For now, this action alone is enough.
+    } catch (e) {
+      console.error(e);
+    }
   }
 }

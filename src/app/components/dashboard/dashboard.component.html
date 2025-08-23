@@ -72,13 +72,16 @@
 
               <!-- Empty state -->
               <div
-                *ngIf="(incoming$ | async)?.length === 0"
+                *ngIf="
+                  ((incoming$ | async)?.length || 0) === 0 &&
+                  ((invitesIncoming$ | async)?.length || 0) === 0
+                "
                 class="text-gray-400 text-sm px-1 py-2"
               >
-                No new friend requests.
+                No new notifications.
               </div>
 
-              <!-- Requests list (first 5) -->
+              <!-- Friend requests list (first 5) -->
               <div
                 *ngFor="let r of incoming$ | async | slice : 0 : 5"
                 class="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-steel-bg/30 cursor-pointer"
@@ -105,6 +108,51 @@
                     </div>
                   </div>
                 </ng-container>
+              </div>
+
+              <!-- NEW: Incoming Game Invites (first 5) -->
+              <div class="mt-2 px-1">
+                <h5 class="text-xs text-gray-300 font-semibold mb-1">
+                  Game invites
+                </h5>
+              </div>
+
+              <div
+                *ngFor="let inv of invitesIncoming$ | async | slice : 0 : 5"
+                class="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-steel-bg/30"
+              >
+                <ng-container *ngIf="profile$(inv.fromUid) | async as p">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <img
+                      [src]="p?.photoURL || '../../../assets/user.png'"
+                      class="w-8 h-8 rounded-lg"
+                      alt="avatar"
+                    />
+                    <div class="min-w-0">
+                      <p class="text-white text-sm truncate text-wrap">
+                        <span class="font-medium">{{
+                          p?.displayName || p?.email || inv.fromUid
+                        }}</span>
+                        <span class="text-gray-300"> invited you to play.</span>
+                      </p>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    class="px-2 py-1 text-xs bg-steel-accent hover:bg-steel-primary text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    (click)="onAcceptInvite(inv)"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    class="px-2 py-1 text-xs bg-steel-secondary hover:bg-steel-bg text-gray-200 rounded-lg border border-steel-primary/40 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    (click)="onDeclineInvite(inv)"
+                  >
+                    Decline
+                  </button>
+                </div>
               </div>
 
               <!-- Footer -->
@@ -690,8 +738,10 @@
 
                   <button
                     type="button"
-                    class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                    aria-label="Challenge AlphaKnight_99"
+                    class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded disabled:opacity-40 disabled:cursor-default"
+                    [disabled]="!f.online"
+                    (click)="challenge(f)"
+                    aria-label="Challenge to play"
                   >
                     <img
                       src="../../../assets/swords.png"

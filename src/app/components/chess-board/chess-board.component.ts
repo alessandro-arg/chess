@@ -1,11 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-
-interface Square {
-  piece: string | null;
-  row: number;
-  col: number;
-}
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription, of, combineLatest } from 'rxjs';
+import { switchMap, map } from 'rxjs/operators';
+import {
+  GameDoc,
+  GameInvite,
+  NotificationService,
+} from '../../notification.service';
+import { AuthService } from '../../auth.service';
+import { UserService } from '../../user.service';
+import { GameParticipant } from '../../notification.service';
 
 @Component({
   selector: 'app-chess-board',
@@ -14,10 +19,14 @@ interface Square {
   templateUrl: './chess-board.component.html',
   styleUrl: './chess-board.component.css',
 })
-export class ChessBoardComponent implements OnInit {
+export class ChessBoardComponent implements OnInit, OnDestroy {
   selectedSquare: string | null = null;
   highlightedSquares: string[] = [];
   isGameMenuOpen = false;
+
+  participantsSub?: Subscription;
+  heartbeat?: any;
+  participantsEnriched: Array<{ uid: string; name: string }> = [];
 
   board: (string | null)[][] = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -48,7 +57,159 @@ export class ChessBoardComponent implements OnInit {
   files: string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   ranks: string[] = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
-  ngOnInit(): void {}
+  mode: 'waiting' | 'game' = 'game';
+  waiting = false;
+  inviteId: string | null = null;
+  vsUid: string | null = null;
+  gameId: string | null = null;
+  gameSub?: Subscription;
+  inviteSub?: Subscription;
+  myUid: string | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private notifier: NotificationService,
+    private auth: AuthService,
+    private userService: UserService
+  ) {}
+
+  ngOnInit(): void {
+    this.myUid = this.route.snapshot.paramMap.get('uid');
+    this.auth.user$.subscribe((u) => {
+      if (!this.myUid && u?.uid) this.myUid = u.uid;
+    });
+
+    // read params
+    this.route.queryParamMap.subscribe((params) => {
+      const invite = params.get('invite');
+      const game = params.get('game');
+      this.vsUid = params.get('vs');
+
+      // cleanup when params change
+      this.inviteSub?.unsubscribe();
+      this.gameSub?.unsubscribe();
+
+      if (invite && !game) {
+        this.mode = 'waiting';
+        this.waiting = true;
+        this.inviteId = invite;
+        this.inviteSub = this.notifier
+          .invite$(invite)
+          .subscribe((inv) => this.onInviteChange(inv));
+      } else if (game) {
+        this.mode = 'game';
+        this.waiting = false;
+        this.gameId = game;
+        this.gameSub = this.notifier
+          .game$(game)
+          .subscribe((g) => this.onGameChange(g));
+      } else {
+        this.mode = 'game';
+        this.waiting = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.inviteSub?.unsubscribe();
+    this.gameSub?.unsubscribe();
+    if (this.gameId && this.myUid) {
+      this.notifier.leaveGame(this.gameId, this.myUid).catch(() => {});
+    }
+    if (this.heartbeat) clearInterval(this.heartbeat);
+    this.participantsSub?.unsubscribe();
+  }
+
+  get inRoomCount(): number {
+    return this.participantsEnriched.length;
+  }
+
+  get participantsDisplay(): string {
+    return this.participantsEnriched.map((p) => p.name).join(' vs ');
+  }
+
+  private async onInviteChange(inv: GameInvite | null) {
+    if (!inv) {
+      await this.returnToDashboard('Game invitation was cancelled.');
+      return;
+    }
+    if (inv.status === 'declined') {
+      await this.returnToDashboard('Your game request was declined.');
+      return;
+    }
+    if (inv.status === 'accepted' && inv.gameId) {
+      // hop into the concrete game session
+      if (!this.myUid) return;
+      this.router.navigate([`/${this.myUid}/chess-board`], {
+        queryParams: { game: inv.gameId },
+      });
+    }
+  }
+
+  private onGameChange(game: GameDoc | null) {
+    if (!game) return;
+
+    // Join presence once when we know gameId & myUid
+    if (this.gameId && this.myUid) {
+      this.notifier
+        .joinGame(this.gameId, this.myUid)
+        .then(() =>
+          console.log('[presence/joined]', this.myUid, 'game:', this.gameId)
+        )
+        .catch(console.error);
+
+      // Optional heartbeat every 30s
+      if (!this.heartbeat) {
+        this.heartbeat = setInterval(() => {
+          if (this.gameId && this.myUid) {
+            this.notifier.touchGame(this.gameId, this.myUid).catch(() => {});
+          }
+        }, 30_000);
+      }
+
+      // Watch participants and log with profile names
+      this.participantsSub?.unsubscribe();
+      this.participantsSub = this.notifier
+        .participants$(this.gameId)
+        .pipe(
+          switchMap((parts) => {
+            if (!parts.length)
+              return of([] as Array<{ uid: string; name: string }>);
+            const streams = parts.map((p) =>
+              this.userService.userProfile$(p.uid).pipe(
+                map((profile) => ({
+                  uid: p.uid,
+                  name: profile?.displayName || profile?.email || p.uid,
+                }))
+              )
+            );
+            return combineLatest(streams);
+          })
+        )
+        .subscribe((list) => {
+          this.participantsEnriched = list;
+          // 👉 Your requested console log:
+          console.log('[Game participants]', list);
+        });
+    }
+  }
+
+  async cancelWaiting() {
+    if (!this.inviteId) return;
+    try {
+      await this.notifier.cancelInvite(this.inviteId);
+    } finally {
+      await this.returnToDashboard('Invitation cancelled.');
+    }
+  }
+
+  private async returnToDashboard(message?: string) {
+    if (!this.myUid) return;
+    if (message) alert(message);
+    // IMPORTANT: go to '/:uid/dashboard' (matches your routes)
+    this.router.navigate([`/${this.myUid}/dashboard`]);
+  }
 
   isLightSquare(row: number, col: number): boolean {
     return (row + col) % 2 === 0;

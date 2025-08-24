@@ -61,18 +61,20 @@
                   height: clamp(50px, 10vw, 100px);
                 "
               >
-                <span
-                  *ngIf="square"
-                  class="text-2xl sm:text-3xl md:text-4xl select-none transition-transform duration-200 hover:scale-110 drop-shadow-lg"
-                  style="filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))"
-                >
-                  {{ pieceSymbols[square] }}
-                </span>
+                <ng-container *ngIf="square as s">
+                  <img
+                    [src]="pieceSrc(s)"
+                    [alt]="s"
+                    draggable="false"
+                    class="pointer-events-none select-none w-[80%] h-[80%] object-contain transition-transform duration-200 hover:scale-105 drop-shadow-lg"
+                    style="filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))"
+                  />
+                </ng-container>
 
                 <!-- Coordinate Labels (bottom row only) -->
                 <div
                   *ngIf="rowIndex === 7"
-                  class="absolute bottom-0 right-1 text-base font-semibold"
+                  class="absolute bottom-0 right-1 text-xs sm:text-base font-semibold"
                   [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ files[colIndex] }}
@@ -80,7 +82,7 @@
 
                 <div
                   *ngIf="colIndex === 0"
-                  class="absolute top-0 left-1 text-base font-semibold"
+                  class="absolute top-0 left-1 text-xs sm:text-base font-semibold"
                   [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ ranks[rowIndex] }}

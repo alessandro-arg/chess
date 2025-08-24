@@ -62,21 +62,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
   ];
 
-  pieceSymbols: { [key: string]: string } = {
-    K: '♔',
-    Q: '♕',
-    R: '♖',
-    B: '♗',
-    N: '♘',
-    P: '♙',
-    k: '♚',
-    q: '♛',
-    r: '♜',
-    b: '♝',
-    n: '♞',
-    p: '♟',
-  };
-
   files: string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   ranks: string[] = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
@@ -133,6 +118,8 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         this.waiting = false;
       }
     });
+
+    this.preloadPieces();
   }
 
   ngOnDestroy(): void {
@@ -178,6 +165,24 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   get oppEloDisplay(): string {
     return this.oppElo != null ? String(this.oppElo) : 'null';
+  }
+
+  pieceSrc(code: string | null): string {
+    if (!code) return '';
+    const type = code.toUpperCase();
+    const color = code === type ? 'w' : 'b';
+    return `assets/chess/${color}${type}.png`;
+  }
+
+  private preloadPieces() {
+    const codes = ['K', 'Q', 'R', 'B', 'N', 'P'];
+    const colors = ['w', 'b'];
+    for (const c of colors) {
+      for (const t of codes) {
+        const img = new Image();
+        img.src = `assets/chess/${c}${t}.png`;
+      }
+    }
   }
 
   private async onInviteChange(inv: GameInvite | null) {

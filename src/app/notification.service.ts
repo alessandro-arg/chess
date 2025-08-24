@@ -18,6 +18,7 @@ import {
 } from '@angular/fire/firestore';
 import { Auth } from '@angular/fire/auth';
 import { map, Observable, of, switchMap } from 'rxjs';
+import { GameRtdbService } from './game-rtdb.service';
 
 export interface GameInvite {
   id: string;
@@ -49,6 +50,8 @@ export interface GameParticipant {
 export class NotificationService {
   private firestore = inject(Firestore);
   private auth = inject(Auth);
+
+  constructor(private rtdbGame: GameRtdbService) {}
 
   invite$(inviteId: string): Observable<GameInvite | null> {
     const ref = doc(this.firestore, 'gameInvites', inviteId);
@@ -263,6 +266,11 @@ export class NotificationService {
       status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+    });
+
+    await this.rtdbGame.create(gameRef.id, inv.fromUid, inv.toUid, {
+      minutes: 15,
+      increment: 0,
     });
 
     await updateDoc(ref, {

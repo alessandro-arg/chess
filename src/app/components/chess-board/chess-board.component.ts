@@ -11,6 +11,9 @@ import {
 import { AuthService } from '../../auth.service';
 import { UserService } from '../../user.service';
 import { GameParticipant } from '../../notification.service';
+import { GameRtdbService } from '../../game-rtdb.service';
+import { Chess } from 'chess.js';
+import type { Square } from 'chess.js';
 
 @Component({
   selector: 'app-chess-board',
@@ -40,6 +43,13 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   oppElo: number | null = null;
 
   profilesSub?: Subscription;
+  liveGame: any;
+  myClockDisplay = '15:00';
+  oppClockDisplay = '15:00';
+  serverOffset = 0;
+  offsetSub?: Subscription;
+  rtdbSub?: Subscription;
+  clockTick?: any;
 
   board: (string | null)[][] = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -84,7 +94,8 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     private router: Router,
     private notifier: NotificationService,
     private auth: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private rtdbGame: GameRtdbService
   ) {}
 
   ngOnInit(): void {
@@ -132,6 +143,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       this.notifier.leaveGame(this.gameId, this.myUid).catch(() => {});
     if (this.heartbeat) clearInterval(this.heartbeat);
     this.participantsSub?.unsubscribe();
+    this.offsetSub?.unsubscribe();
+    this.rtdbSub?.unsubscribe();
+    if (this.clockTick) clearInterval(this.clockTick);
   }
 
   get inRoomCount(): number {
@@ -186,63 +200,105 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   private onGameChange(game: GameDoc | null) {
     if (!game) return;
+    if (!this.gameId || !this.myUid || !game.players) return;
 
-    // Join presence once when we know gameId & myUid
-    if (this.gameId && this.myUid && game.players) {
-      const white = game.players.white;
-      const black = game.players.black;
+    // 1) Who am I? Who's the opponent?
+    const white = game.players.white;
+    const black = game.players.black;
 
-      this.myColor = white === this.myUid ? 'white' : 'black';
-      this.oppUid = this.myColor === 'white' ? black : white;
+    this.myColor = white === this.myUid ? 'white' : 'black';
+    this.oppUid = this.myColor === 'white' ? black : white;
 
-      // Join presence (you already have this)
-      this.notifier.joinGame(this.gameId, this.myUid).catch(console.error);
-      if (!this.heartbeat) {
-        this.heartbeat = setInterval(() => {
-          if (this.gameId && this.myUid)
-            this.notifier.touchGame(this.gameId, this.myUid).catch(() => {});
-        }, 30_000);
-      }
+    // 2) Flip board orientation so the local player is on the bottom
+    //    Also flip file/rank labels used for coordinates & rendering.
+    const FILES_W = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const RANKS_W = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    const FILES_B = [...FILES_W].reverse();
+    const RANKS_B = [...RANKS_W].reverse();
 
-      this.profilesSub?.unsubscribe();
-      this.profilesSub = combineLatest([
-        this.userService.userProfile$(this.myUid),
-        this.oppUid ? this.userService.userProfile$(this.oppUid) : of(null),
-      ]).subscribe(([me, opp]) => {
-        this.myName = me?.displayName || me?.email || 'You';
-        this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
-        this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
+    this.files = this.myColor === 'white' ? FILES_W : FILES_B;
+    this.ranks = this.myColor === 'white' ? RANKS_W : RANKS_B;
 
-        this.oppName = opp?.displayName || opp?.email || 'Opponent';
-        this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
-        this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+    // 3) Firestore presence (your existing system)
+    this.notifier.joinGame(this.gameId, this.myUid).catch(console.error);
+    if (!this.heartbeat) {
+      this.heartbeat = setInterval(() => {
+        if (this.gameId && this.myUid) {
+          this.notifier.touchGame(this.gameId, this.myUid).catch(() => {});
+        }
+      }, 30_000);
+    }
+
+    // 4) Load/keep profiles (you + opponent)
+    this.profilesSub?.unsubscribe();
+    this.profilesSub = combineLatest([
+      this.userService.userProfile$(this.myUid),
+      this.oppUid ? this.userService.userProfile$(this.oppUid) : of(null),
+    ]).subscribe(([me, opp]) => {
+      this.myName = me?.displayName || me?.email || 'You';
+      this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
+      this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
+
+      this.oppName = opp?.displayName || opp?.email || 'Opponent';
+      this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
+      this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+    });
+
+    // 5) Participants list (optional, keep your existing code)
+    this.participantsSub?.unsubscribe();
+    this.participantsSub = this.notifier
+      .participants$(this.gameId)
+      .pipe(
+        switchMap((parts) => {
+          if (!parts.length)
+            return of([] as Array<{ uid: string; name: string }>);
+          const streams = parts.map((p) =>
+            this.userService.userProfile$(p.uid).pipe(
+              map((profile) => ({
+                uid: p.uid,
+                name: profile?.displayName || profile?.email || p.uid,
+              }))
+            )
+          );
+          return combineLatest(streams);
+        })
+      )
+      .subscribe((list) => {
+        this.participantsEnriched = list;
+        console.log('[Game participants]', list);
       });
 
-      // Watch participants and log with profile names
-      this.participantsSub?.unsubscribe();
-      this.participantsSub = this.notifier
-        .participants$(this.gameId)
-        .pipe(
-          switchMap((parts) => {
-            if (!parts.length)
-              return of([] as Array<{ uid: string; name: string }>);
-            const streams = parts.map((p) =>
-              this.userService.userProfile$(p.uid).pipe(
-                map((profile) => ({
-                  uid: p.uid,
-                  name: profile?.displayName || profile?.email || p.uid,
-                }))
-              )
-            );
-            return combineLatest(streams);
-          })
-        )
-        .subscribe((list) => {
-          this.participantsEnriched = list;
-          // 👉 Your requested console log:
-          console.log('[Game participants]', list);
-        });
-    }
+    // 6) RTDB server time offset (for fair clocks)
+    this.offsetSub?.unsubscribe();
+    this.offsetSub = this.rtdbGame.serverOffset$().subscribe((o) => {
+      this.serverOffset = o ?? 0;
+    });
+
+    // 7) RTDB live game stream
+    this.rtdbSub?.unsubscribe();
+    this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe((g) => {
+      if (!g) return;
+      // Apply FEN -> board
+      this.applyFen(g.fen);
+      // Flip the rendered board for Black so they see their pieces at bottom
+      if (this.myColor === 'black') {
+        this.board = this.board.map((row) => [...row].reverse()).reverse();
+      }
+      // Update clocks using server offset
+      this.updateClocksDisplay(g, this.serverOffset);
+      // RTDB presence (separate from Firestore presence)
+      this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
+      // Cache latest game
+      this.liveGame = g;
+    });
+
+    // 8) Smooth clock countdown in UI
+    if (this.clockTick) clearInterval(this.clockTick);
+    this.clockTick = setInterval(() => {
+      if (this.liveGame) {
+        this.updateClocksDisplay(this.liveGame, this.serverOffset);
+      }
+    }, 200);
   }
 
   async cancelWaiting() {
@@ -269,37 +325,50 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     return (row + col) % 2 === 0;
   }
 
+  toAlgebraic(row: number, col: number): string {
+    // row=0 is rank 8, col=0 is file a
+    const file = this.files[col];
+    const rank = this.ranks[row]; // ranks[] = ['8','7',...,'1']
+    return `${file}${rank}`;
+  }
+
   handleSquareClick(row: number, col: number): void {
     const squareId = `${col}-${row}`;
-
     if (this.selectedSquare) {
       if (this.selectedSquare === squareId) {
-        // Deselect if clicking the same square
         this.selectedSquare = null;
         this.highlightedSquares = [];
       } else {
-        // Move piece (simplified logic)
         const [fromCol, fromRow] = this.selectedSquare.split('-').map(Number);
-        this.board[row][col] = this.board[fromRow][fromCol];
-        this.board[fromRow][fromCol] = null;
+        const from = this.toAlgebraic(fromRow, fromCol);
+        const to = this.toAlgebraic(row, col);
         this.selectedSquare = null;
         this.highlightedSquares = [];
+
+        if (this.gameId) {
+          // NOTE: handle promotion UI later; default queen
+          this.rtdbGame
+            .tryMove(this.gameId, { from, to, promotion: 'q' })
+            .catch((err) => console.warn('illegal/failed move', err));
+        }
       }
     } else {
-      // Select piece if there's one on the square
       if (this.board[row][col]) {
         this.selectedSquare = squareId;
-        // Add some example highlighted squares for possible moves
-        const possibleMoves = [
-          `${col + 1}-${row}`,
-          `${col - 1}-${row}`,
-          `${col}-${row + 1}`,
-          `${col}-${row - 1}`,
-        ].filter((square) => {
-          const [c, r] = square.split('-').map(Number);
-          return c >= 0 && c < 8 && r >= 0 && r < 8;
+        // (optional) highlight legal moves by running chess.js locally from live FEN
+        const c = new Chess(this.liveGame?.fen);
+        const from = this.toAlgebraic(row, col);
+        const moves = c.moves({
+          square: from as Square,
+          verbose: true,
+        }) as Array<{ to: string }>;
+        this.highlightedSquares = moves.map((m) => {
+          const file = m.to[0]; // 'a'..'h'
+          const rank = m.to[1]; // '1'..'8'
+          const fIndex = this.files.indexOf(file);
+          const rIndex = this.ranks.indexOf(rank);
+          return `${fIndex}-${rIndex}`;
         });
-        this.highlightedSquares = possibleMoves;
       }
     }
   }
@@ -348,14 +417,48 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   offerDraw(): void {
-    console.log('Offer draw');
+    if (!this.gameId) return;
+    this.rtdbGame.offerDraw(this.gameId).catch(() => {});
     this.closeGameMenu();
-    // Implement offer draw logic
   }
 
   resign(): void {
-    console.log('Resign game');
+    if (!this.gameId) return;
+    this.rtdbGame.resign(this.gameId).catch(() => {});
     this.closeGameMenu();
-    // Implement resign logic
+  }
+
+  applyFen(fen: string) {
+    // you already render a board matrix; use chess.js to expand from fen
+    const c = new Chess(fen);
+    const b = c.board(); // 8x8 array of {type,color} | null, rank 8 -> 1
+    this.board = b.map((row) =>
+      row.map((cell) =>
+        cell ? (cell.color === 'w' ? cell.type.toUpperCase() : cell.type) : null
+      )
+    );
+    this.liveGame = { ...(this.liveGame || {}), fen };
+  }
+
+  updateClocksDisplay(g: any, offset: number) {
+    this.liveGame = g;
+    const now = Date.now() + (offset || 0);
+    const turn = g.turn; // 'w' or 'b'
+    const elapsed = Math.max(0, now - (g.lastMoveAt || now));
+    const w = g.remainingMs?.w ?? 0;
+    const b = g.remainingMs?.b ?? 0;
+    const wNow =
+      turn === 'w' && g.status === 'active' ? Math.max(0, w - elapsed) : w;
+    const bNow =
+      turn === 'b' && g.status === 'active' ? Math.max(0, b - elapsed) : b;
+    const fmt = (ms: number) => {
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${r.toString().padStart(2, '0')}`;
+    };
+    const meWhite = this.myColor === 'white';
+    this.myClockDisplay = fmt(meWhite ? wNow : bNow);
+    this.oppClockDisplay = fmt(meWhite ? bNow : wNow);
   }
 }

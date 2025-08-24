@@ -32,7 +32,9 @@
           </div>
         </div>
         <div class="text-center">
-          <div class="text-slate-300 font-mono text-lg">15:00</div>
+          <div class="text-slate-300 font-mono text-lg">
+            {{ oppClockDisplay }}
+          </div>
         </div>
       </div>
     </div>
@@ -125,7 +127,9 @@
       <!-- Game Menu Button -->
       <div class="w-fit flex items-center gap-4">
         <div class="text-center">
-          <div class="text-slate-300 font-mono text-lg">15:00</div>
+          <div class="text-slate-300 font-mono text-lg">
+            {{ myClockDisplay }}
+          </div>
         </div>
         <button
           (click)="toggleGameMenu()"

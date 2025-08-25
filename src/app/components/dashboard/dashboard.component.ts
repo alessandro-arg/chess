@@ -12,11 +12,11 @@ import {
   shareReplay,
   switchMap,
 } from 'rxjs';
-import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { FriendService, Friendship } from '../../friend.service';
 import { GameInvite, NotificationService } from '../../notification.service';
 import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
+import { GameRtdbService } from '../../game-rtdb.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -47,6 +47,9 @@ export class DashboardComponent {
   previousOutgoing?: GameInvite[] = [];
   outgoingInvitesSub?: any;
 
+  botDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+  botMinutes = 10; // 5 | 10 | 20
+
   private localSeenAt$ = new BehaviorSubject<number>(0);
 
   constructor(
@@ -56,7 +59,8 @@ export class DashboardComponent {
     private readonly friend: FriendService,
     private readonly notifier: NotificationService,
     private readonly userService: UserService,
-    private readonly presence: PresenceService
+    private readonly presence: PresenceService,
+    private readonly rtdbGame: GameRtdbService
   ) {
     this.auth.user$.subscribe((user) => {
       this.uid = user?.uid ?? null;
@@ -171,6 +175,43 @@ export class DashboardComponent {
 
   ngOnDestroy() {
     this.outgoingInvitesSub?.unsubscribe?.();
+  }
+
+  setBotDifficulty(level: 'easy' | 'medium' | 'hard') {
+    this.botDifficulty = level;
+  }
+
+  setBotMinutes(min: number) {
+    this.botMinutes = min;
+  }
+
+  async startBotGame() {
+    const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
+    if (!uid) return;
+
+    try {
+      // 1) Create a Firestore "game" doc with bot metadata
+      const gameId = await this.notifier.createBotGame({
+        userUid: uid,
+        difficulty: this.botDifficulty,
+        minutes: this.botMinutes,
+        increment: 0, // can add later
+      });
+
+      // 2) Create RTDB state
+      await this.rtdbGame.create(gameId, uid, 'BOT', {
+        minutes: this.botMinutes,
+        increment: 0,
+      });
+
+      // 3) Go to the board
+      this.router.navigate([`/${uid}/chess-board`], {
+        queryParams: { game: gameId, bot: 1 },
+      });
+    } catch (e) {
+      console.error(e);
+      alert('Could not start bot game. Please try again.');
+    }
   }
 
   private profileCache = new Map<string, Observable<UserProfile | null>>();

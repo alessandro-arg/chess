@@ -36,12 +36,24 @@ export interface GameDoc {
   status: 'waiting' | 'active' | 'finished';
   createdAt: any;
   updatedAt: any;
+
+  mode?: 'pvp' | 'bot';
+  bot?: { difficulty: 'easy' | 'medium' | 'hard' };
+  tc?: { minutes: number; increment: number };
+  result?: '1-0' | '0-1' | '1/2-1/2' | null;
 }
 
 export interface GameParticipant {
   uid: string;
   joinedAt: any;
   lastActiveAt: any;
+}
+
+export interface BotGameCreate {
+  userUid: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  minutes: number;
+  increment: number;
 }
 
 @Injectable({
@@ -300,5 +312,42 @@ export class NotificationService {
   async leaveGame(gameId: string, uid: string): Promise<void> {
     const ref = doc(this.firestore, 'games', gameId, 'participants', uid);
     await deleteDoc(ref);
+  }
+
+  async createBotGame(cfg: BotGameCreate): Promise<string> {
+    const gamesCol = collection(this.firestore, 'games');
+    const refDoc = await addDoc(gamesCol, {
+      players: { white: cfg.userUid, black: 'BOT', both: [cfg.userUid, 'BOT'] },
+      mode: 'bot',
+      bot: { difficulty: cfg.difficulty },
+      tc: { minutes: cfg.minutes, increment: cfg.increment },
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // create RTDB game too
+    await this.rtdbGame.create(refDoc.id, cfg.userUid, 'BOT', {
+      minutes: cfg.minutes,
+      increment: cfg.increment,
+    });
+
+    return refDoc.id;
+  }
+
+  async updateGameResult(
+    gameId: string,
+    payload: {
+      status: 'mate' | 'draw' | 'flag' | 'resign' | 'aborted' | 'finished';
+      result: '1-0' | '0-1' | '1/2-1/2' | null;
+    }
+  ) {
+    const ref = doc(this.firestore, 'games', gameId);
+    await updateDoc(ref, {
+      status: payload.status,
+      result: payload.result,
+      finishedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   }
 }

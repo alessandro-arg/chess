@@ -14,6 +14,7 @@ import { GameParticipant } from '../../notification.service';
 import { GameRtdbService } from '../../game-rtdb.service';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
+import { BotService, BotLevel } from '../../bot.service';
 
 @Component({
   selector: 'app-chess-board',
@@ -74,13 +75,20 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   inviteSub?: Subscription;
   myUid: string | null = null;
 
+  isBotGame = false;
+  botLevel: BotLevel = 'medium';
+  aiBusy = false;
+  lastAIMoveAt: number | null = null;
+  postedResult = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private notifier: NotificationService,
     private auth: AuthService,
     private userService: UserService,
-    private rtdbGame: GameRtdbService
+    private rtdbGame: GameRtdbService,
+    private bot: BotService
   ) {}
 
   ngOnInit(): void {
@@ -214,6 +222,21 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.myColor = white === this.myUid ? 'white' : 'black';
     this.oppUid = this.myColor === 'white' ? black : white;
 
+    this.isBotGame =
+      game.mode === 'bot' ||
+      game.players.black === 'BOT' ||
+      game.players.white === 'BOT';
+    this.botLevel = game.bot?.difficulty ?? 'medium';
+
+    // If opponent is the bot, label/photo:
+    if (this.isBotGame) {
+      this.oppName = `AI — ${this.botLevel[0].toUpperCase()}${this.botLevel.slice(
+        1
+      )}`;
+      this.oppPhotoURL = '../../../assets/robot.png';
+      this.oppElo = null;
+    }
+
     // 2) Flip board orientation so the local player is on the bottom
     //    Also flip file/rank labels used for coordinates & rendering.
     const FILES_W = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -281,7 +304,43 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
     // 7) RTDB live game stream
     this.rtdbSub?.unsubscribe();
-    this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe((g) => {
+    this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe(async (g) => {
+      if (this.isBotGame && g.status === 'active') {
+        const botColor: 'w' | 'b' = g.players?.blackUid === 'BOT' ? 'b' : 'w';
+        if (g.turn === botColor) {
+          if (!this.aiBusy && this.lastAIMoveAt !== g.lastMoveAt) {
+            this.aiBusy = true;
+            this.lastAIMoveAt = g.lastMoveAt;
+            try {
+              const mv = await this.bot.pickMoveAsync(g.fen, this.botLevel);
+              await this.rtdbGame.tryAIMove(this.gameId!, mv);
+            } catch (e) {
+              console.warn('AI move failed', e);
+            } finally {
+              this.aiBusy = false;
+            }
+          }
+        }
+      }
+
+      // record result once
+      if (!this.postedResult && g.result && g.status !== 'active') {
+        this.postedResult = true;
+        const statusMap: any = {
+          mate: 'mate',
+          draw: 'draw',
+          flag: 'flag',
+          resign: 'resign',
+        };
+        const status = statusMap[g.status] || 'finished';
+        this.notifier
+          .updateGameResult(this.gameId!, {
+            status,
+            result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
+          })
+          .catch(() => {});
+      }
+
       if (!g) return;
       // Apply FEN -> board
       this.applyFen(g.fen);

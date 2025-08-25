@@ -245,6 +245,9 @@
                 <div class="flex gap-2">
                   <button
                     type="button"
+                    (click)="setBotDifficulty('easy')"
+                    [class.bg-steel-primary]="botDifficulty === 'easy'"
+                    [class.text-white]="botDifficulty === 'easy'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                     aria-pressed="false"
                   >
@@ -252,13 +255,19 @@
                   </button>
                   <button
                     type="button"
-                    class="px-3 py-1 text-xs font-medium bg-steel-primary text-white border border-steel-primary rounded-md focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                    (click)="setBotDifficulty('medium')"
+                    [class.bg-steel-primary]="botDifficulty === 'medium'"
+                    [class.text-white]="botDifficulty === 'medium'"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                     aria-pressed="true"
                   >
                     Medium
                   </button>
                   <button
                     type="button"
+                    (click)="setBotDifficulty('hard')"
+                    [class.bg-steel-primary]="botDifficulty === 'hard'"
+                    [class.text-white]="botDifficulty === 'hard'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                     aria-pressed="false"
                   >
@@ -272,18 +281,40 @@
                 <label class="block text-sm font-medium text-steel-accent mb-2"
                   >Time Control</label
                 >
-                <select
-                  class="w-full px-3 py-2 bg-steel-bg/60 border border-steel-primary/40 focus:border-steel-accent text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-steel-accent"
-                >
-                  <option value="blitz">Blitz (5+3)</option>
-                  <option value="rapid">Rapid (15+10)</option>
-                  <option value="classical">Classical (30+0)</option>
-                </select>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    (click)="setBotMinutes(5)"
+                    [class.bg-steel-primary]="botMinutes === 5"
+                    [class.text-white]="botMinutes === 5"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  >
+                    5 min
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setBotMinutes(10)"
+                    [class.bg-steel-primary]="botMinutes === 10"
+                    [class.text-white]="botMinutes === 10"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  >
+                    10 min
+                  </button>
+                  <button
+                    type="button"
+                    (click)="setBotMinutes(20)"
+                    [class.bg-steel-primary]="botMinutes === 20"
+                    [class.text-white]="botMinutes === 20"
+                    class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  >
+                    20 min
+                  </button>
+                </div>
               </div>
 
               <button
                 type="button"
-                (click)="openTestBoard()"
+                (click)="startBotGame()"
                 class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
               >
                 <span class="flex items-center justify-center gap-2">

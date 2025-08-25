@@ -46,6 +46,7 @@ export class GameRtdbService {
       remainingMs: { w: total, b: total },
       drawOffer: null,
       moveNumber: 1,
+      increment: tc.increment,
     });
   }
 
@@ -156,6 +157,83 @@ export class GameRtdbService {
         return g;
       },
       { applyLocally: false /* keeps UI consistent across clients */ }
+    );
+  }
+
+  async tryAIMove(
+    gameId: string,
+    move: { from: string; to: string; promotion?: 'q' | 'r' | 'b' | 'n' }
+  ) {
+    const base = ref(this.db, `rt-games/${gameId}`);
+    await runTransaction(
+      base,
+      (g: any) => {
+        if (!g || g.status !== 'active') return g;
+
+        const isBotsTurn =
+          (g.turn === 'w' && g.players?.whiteUid === 'BOT') ||
+          (g.turn === 'b' && g.players?.blackUid === 'BOT');
+        if (!isBotsTurn) return g;
+
+        const now = Date.now();
+
+        // time check for current side
+        const elapsed = Math.max(0, now - (g.lastMoveAt || now));
+        const remW = g.remainingMs?.w ?? 0;
+        const remB = g.remainingMs?.b ?? 0;
+        const remActive = g.turn === 'w' ? remW : remB;
+        const after = remActive - elapsed;
+        if (after <= 0) {
+          g.status = 'flag';
+          g.result = g.turn === 'w' ? '0-1' : '1-0';
+          return g;
+        }
+
+        const chess = new Chess(g.fen);
+        const m = chess.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || 'q',
+        });
+        if (!m) return g;
+
+        const newFen = chess.fen();
+        const incMs = g.increment ? g.increment * 1000 : 0;
+
+        if (g.turn === 'w') {
+          g.remainingMs.w = after + incMs;
+        } else {
+          g.remainingMs.b = after + incMs;
+        }
+        g.fen = newFen;
+        g.turn = g.turn === 'w' ? 'b' : 'w';
+        g.lastMoveAt = now;
+        g.moveNumber = chess.moveNumber?.() ?? (g.moveNumber || 1);
+
+        g.drawOffer = null;
+        if (chess.isGameOver()) {
+          if (chess.isCheckmate()) {
+            g.status = 'mate';
+            g.result = g.turn === 'w' ? '1-0' : '0-1'; // note: turn already flipped
+          } else if (
+            chess.isStalemate() ||
+            chess.isDraw() ||
+            chess.isInsufficientMaterial() ||
+            chess.isThreefoldRepetition()
+          ) {
+            g.status = 'draw';
+            g.result = '1/2-1/2';
+          }
+        }
+
+        const moves = g.moves || {};
+        const id = push(child(base, 'moves')).key!;
+        moves[id] = { san: m.san, by: 'BOT', at: now, fenAfter: newFen };
+        g.moves = moves;
+
+        return g;
+      },
+      { applyLocally: false }
     );
   }
 

@@ -419,6 +419,45 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     return `${file}${rank}`;
   }
 
+  private algebraicToCellId(sq: string): string {
+    const file = sq[0]; // 'a'..'h'
+    const rank = sq[1]; // '1'..'8'
+    const fIndex = this.files.indexOf(file);
+    const rIndex = this.ranks.indexOf(rank);
+    return `${fIndex}-${rIndex}`;
+  }
+
+  private getCastleOptions(
+    c: Chess
+  ): Array<{ rookFrom: string; kingFrom: string; kingTo: string }> {
+    const side = c.turn(); // 'w' | 'b'
+    const kingFrom = side === 'w' ? 'e1' : 'e8';
+    const kingMoves = c.moves({
+      square: kingFrom as any,
+      verbose: true,
+    }) as Array<any>;
+    const out: Array<{ rookFrom: string; kingFrom: string; kingTo: string }> =
+      [];
+
+    for (const m of kingMoves) {
+      if (m.flags?.includes('k')) {
+        out.push({
+          rookFrom: side === 'w' ? 'h1' : 'h8',
+          kingFrom,
+          kingTo: m.to,
+        }); // e1→g1 or e8→g8
+      }
+      if (m.flags?.includes('q')) {
+        out.push({
+          rookFrom: side === 'w' ? 'a1' : 'a8',
+          kingFrom,
+          kingTo: m.to,
+        }); // e1→c1 or e8→c8
+      }
+    }
+    return out;
+  }
+
   handleSquareClick(row: number, col: number): void {
     const squareId = `${col}-${row}`;
     if (this.selectedSquare) {
@@ -433,7 +472,51 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         this.highlightedSquares = [];
 
         if (this.gameId) {
-          // NOTE: handle promotion UI later; default queen
+          const c = new Chess(this.liveGame?.fen);
+          const side = c.turn(); // 'w' | 'b'
+          const pieceFrom = c.get(from as any);
+
+          const castles = this.getCastleOptions(c); // only when actually legal in current FEN
+          const matchByRookFirst = castles.find(
+            (opt) =>
+              pieceFrom?.type === 'r' &&
+              opt.rookFrom === from &&
+              opt.kingTo === to
+          );
+          const matchByKingToRook = castles.find(
+            (opt) =>
+              pieceFrom?.type === 'k' &&
+              opt.kingFrom === from &&
+              opt.rookFrom === to
+          );
+
+          // Case 1: rook-first UX (rook clicked → click king's destination)
+          if (matchByRookFirst) {
+            this.rtdbGame
+              .tryMove(this.gameId, {
+                from: matchByRookFirst.kingFrom as any,
+                to: matchByRookFirst.kingTo as any,
+              })
+              .catch((err) =>
+                console.warn('illegal/failed castle (rook-first)', err)
+              );
+            return;
+          }
+
+          // Case 2: king-first but user clicked the ROOK square
+          if (matchByKingToRook) {
+            this.rtdbGame
+              .tryMove(this.gameId, {
+                from: matchByKingToRook.kingFrom as any,
+                to: matchByKingToRook.kingTo as any,
+              })
+              .catch((err) =>
+                console.warn('illegal/failed castle (king-to-rook)', err)
+              );
+            return;
+          }
+
+          // Normal move (includes king → g/c when legal)
           this.rtdbGame
             .tryMove(this.gameId, { from, to, promotion: 'q' })
             .catch((err) => console.warn('illegal/failed move', err));
@@ -445,17 +528,33 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         // (optional) highlight legal moves by running chess.js locally from live FEN
         const c = new Chess(this.liveGame?.fen);
         const from = this.toAlgebraic(row, col);
-        const moves = c.moves({
-          square: from as Square,
-          verbose: true,
-        }) as Array<{ to: string }>;
-        this.highlightedSquares = moves.map((m) => {
-          const file = m.to[0]; // 'a'..'h'
-          const rank = m.to[1]; // '1'..'8'
-          const fIndex = this.files.indexOf(file);
-          const rIndex = this.ranks.indexOf(rank);
-          return `${fIndex}-${rIndex}`;
-        });
+        const moves = c.moves({ square: from as any, verbose: true }) as Array<{
+          to: string;
+        }>;
+        let highlights = moves.map((m) => this.algebraicToCellId(m.to));
+
+        // Extra hints for castling UX:
+        const piece = c.get(from as any);
+
+        // If a ROOK is selected, also highlight the king's castle destination squares (when legal)
+        if (piece?.type === 'r' && piece?.color === c.turn()) {
+          const castles = this.getCastleOptions(c);
+          for (const opt of castles) {
+            if (opt.rookFrom === from) {
+              highlights.push(this.algebraicToCellId(opt.kingTo));
+            }
+          }
+        }
+
+        // If the KING is selected, also highlight the rook squares you can click to trigger castling
+        if (piece?.type === 'k' && piece?.color === c.turn()) {
+          const castles = this.getCastleOptions(c);
+          for (const opt of castles) {
+            highlights.push(this.algebraicToCellId(opt.rookFrom));
+          }
+        }
+
+        this.highlightedSquares = Array.from(new Set(highlights));
       }
     }
   }

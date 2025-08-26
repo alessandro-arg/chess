@@ -133,7 +133,9 @@ export class GameRtdbService {
         if (chess.isGameOver()) {
           if (chess.isCheckmate()) {
             g.status = 'mate';
-            g.result = g.turn === 'w' ? '1-0' : '0-1'; // note: turn already flipped
+            // After flipping turn, the player NOT to move is checkmated.
+            // The winner is the side that just moved:
+            g.result = g.turn === 'b' ? '1-0' : '0-1';
           } else if (
             chess.isStalemate() ||
             chess.isDraw() ||
@@ -214,7 +216,9 @@ export class GameRtdbService {
         if (chess.isGameOver()) {
           if (chess.isCheckmate()) {
             g.status = 'mate';
-            g.result = g.turn === 'w' ? '1-0' : '0-1';
+            // After flipping turn, the player NOT to move is checkmated.
+            // The winner is the side that just moved:
+            g.result = g.turn === 'b' ? '1-0' : '0-1';
           } else if (
             chess.isStalemate() ||
             chess.isDraw() ||

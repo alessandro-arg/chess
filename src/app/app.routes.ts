@@ -9,6 +9,7 @@ import { SupportComponent } from './components/settings/support/support.componen
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { ImpressumComponent } from './components/impressum/impressum.component';
 import { ChessBoardComponent } from './components/chess-board/chess-board.component';
+import { GameEndComponent } from './components/game-end/game-end.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: ':uid/profile-settings', component: ProfileSettingsComponent },
   { path: ':uid/support', component: SupportComponent },
   { path: ':uid/chess-board', component: ChessBoardComponent },
+  { path: ':uid/game-end', component: GameEndComponent },
   {
     path: ':uid/settings',
     component: SettingsComponent,

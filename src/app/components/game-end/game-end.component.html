@@ -1,0 +1,164 @@
+<div
+  *ngIf="isVisible"
+  class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50"
+  (click)="close()"
+>
+  <!-- Modal Content -->
+  <div
+    class="w-full max-w-md bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Close Button -->
+    <div class="absolute top-4 right-4 z-10">
+      <button
+        (click)="close()"
+        class="w-8 h-8 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Winner Header -->
+    <div
+      class="bg-slate-700 px-6 py-4 text-center border-b border-slate-600 relative"
+    >
+      <h1
+        class="text-xl font-bold"
+        [class.text-emerald-400]="outcome === 'win'"
+        [class.text-red-400]="outcome === 'loss'"
+        [class.text-slate-300]="outcome === 'draw'"
+      >
+        {{ winnerText }}
+      </h1>
+
+      <p class="text-slate-400 text-sm mt-2">
+        {{ outcomeText }}
+      </p>
+    </div>
+
+    <!-- Players and Score -->
+    <div class="px-6 py-6">
+      <div class="flex items-center justify-between mb-6">
+        <!-- Left Player -->
+        <div class="flex flex-col items-center">
+          <div
+            class="w-16 h-16 bg-slate-700 rounded-lg border border-slate-600 overflow-hidden mb-2"
+          >
+            <img
+              [src]="leftPlayerPhoto"
+              [alt]="leftPlayerName"
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <span class="text-slate-300 text-sm font-medium">{{
+            leftPlayerName
+          }}</span>
+        </div>
+
+        <!-- Score -->
+        <div class="text-center">
+          <div class="text-3xl font-bold text-slate-200 mb-1">
+            {{ gameScore }}
+          </div>
+        </div>
+
+        <!-- Right Player -->
+        <div class="flex flex-col items-center">
+          <div
+            class="w-16 h-16 bg-slate-700 rounded-lg border border-slate-600 overflow-hidden mb-2"
+          >
+            <img
+              [src]="rightPlayerPhoto"
+              [alt]="rightPlayerName"
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <span class="text-slate-300 text-sm font-medium">{{
+            rightPlayerName
+          }}</span>
+        </div>
+      </div>
+
+      <!-- Current Player ELO -->
+      <div class="text-center mb-6">
+        <div class="text-slate-400 text-sm font-medium mb-1">DEINE WERTUNG</div>
+        <div class="flex items-center justify-center">
+          <svg
+            class="w-5 h-5 text-amber-400 mr-2"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+            />
+          </svg>
+          <span class="text-slate-200 text-2xl font-bold">{{
+            currentPlayerElo
+          }}</span>
+          <span
+            *ngIf="eloChange !== 0"
+            class="ml-2 text-sm font-medium"
+            [class.text-emerald-400]="eloChange > 0"
+            [class.text-red-400]="eloChange < 0"
+          >
+            {{ eloChange > 0 ? "+" : "" }}{{ eloChange }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-3">
+        <!-- Game Analysis Button -->
+        <button
+          (click)="analyze()"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-all duration-200"
+        >
+          Partie-Analyse
+        </button>
+
+        <!-- Secondary Actions -->
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            (click)="rematch()"
+            class="bg-slate-700 hover:bg-slate-600 text-slate-200 py-2.5 rounded-xl border border-slate-600 transition-all duration-200 font-medium"
+          >
+            Revanche
+          </button>
+          <button
+            (click)="newGame()"
+            class="bg-slate-700 hover:bg-slate-600 text-slate-200 py-2.5 rounded-xl border border-slate-600 transition-all duration-200 font-medium"
+          >
+            Neue Partie
+          </button>
+        </div>
+
+        <!-- Back to Dashboard -->
+        <button
+          (click)="backToDashboard()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-all duration-200"
+        >
+          Zurück zum Dashboard
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Info Footer -->
+    <div class="bg-slate-700 px-6 py-3 border-t border-slate-600">
+      <p class="text-slate-400 text-xs text-center">
+        Spiel ID: {{ gameData.gameId }}
+      </p>
+    </div>
+  </div>
+</div>

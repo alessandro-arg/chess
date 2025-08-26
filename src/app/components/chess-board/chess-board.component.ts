@@ -14,11 +14,12 @@ import { GameRtdbService } from '../../game-rtdb.service';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import { BotService, BotLevel } from '../../bot.service';
+import { GameEndComponent, GameEndData } from '../game-end/game-end.component';
 
 @Component({
   selector: 'app-chess-board',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GameEndComponent],
   templateUrl: './chess-board.component.html',
   styleUrl: './chess-board.component.css',
 })
@@ -80,6 +81,12 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   aiBusy = false;
   lastAIMoveAt: number | null = null;
   postedResult = false;
+
+  confirmResignOpen = false;
+  private navigatedOnGameEnd = false;
+
+  showGameEndModal = false;
+  gameEndData: GameEndData | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -365,6 +372,42 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       }
 
       if (!g) return;
+
+      if (g.status !== 'active' && !this.navigatedOnGameEnd) {
+        this.navigatedOnGameEnd = true;
+
+        // figure out my outcome
+        const myIsWhite = this.myColor === 'white';
+        let outcome: 'win' | 'loss' | 'draw' = 'draw';
+        if (g.result === '1-0') outcome = myIsWhite ? 'win' : 'loss';
+        else if (g.result === '0-1') outcome = myIsWhite ? 'loss' : 'win';
+        else if (g.result === '1/2-1/2') outcome = 'draw';
+
+        // optional: stop timers
+        if (this.clockTick) clearInterval(this.clockTick);
+
+        this.gameEndData = {
+          gameId: this.gameId!,
+          result: g.result as '1-0' | '0-1' | '1/2-1/2',
+          status: g.status as 'mate' | 'draw' | 'flag' | 'resign' | 'finished',
+          myColor: this.myColor!,
+          myProfile: {
+            name: this.myName,
+            photoURL: this.myPhotoURL,
+            elo: this.myElo,
+          },
+          oppProfile: {
+            name: this.oppName,
+            photoURL: this.oppPhotoURL,
+            elo: this.oppElo,
+          },
+          myUid: this.myUid!,
+        };
+
+        this.showGameEndModal = true;
+        return;
+      }
+
       // Apply FEN -> board
       this.applyFen(g.fen);
       // Flip the rendered board for Black so they see their pieces at bottom
@@ -609,9 +652,21 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   resign(): void {
+    this.confirmResignOpen = true;
+  }
+
+  cancelResign(): void {
+    this.confirmResignOpen = false;
+  }
+
+  async confirmResign(): Promise<void> {
     if (!this.gameId) return;
-    this.rtdbGame.resign(this.gameId).catch(() => {});
-    this.closeGameMenu();
+    try {
+      await this.rtdbGame.resign(this.gameId);
+    } finally {
+      this.confirmResignOpen = false;
+      this.isGameMenuOpen = false;
+    }
   }
 
   applyFen(fen: string) {
@@ -646,5 +701,33 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     const meWhite = this.myColor === 'white';
     this.myClockDisplay = fmt(meWhite ? wNow : bNow);
     this.oppClockDisplay = fmt(meWhite ? bNow : wNow);
+  }
+
+  closeGameEndModal(): void {
+    this.showGameEndModal = false;
+    this.gameEndData = null;
+  }
+
+  handleBackToDashboard(): void {
+    this.closeGameEndModal();
+    this.returnToDashboard();
+  }
+
+  handleRematch(): void {
+    this.closeGameEndModal();
+    // Implement rematch logic here
+    console.log('Rematch requested');
+  }
+
+  handleNewGame(): void {
+    this.closeGameEndModal();
+    // Navigate to game creation or lobby
+    this.returnToDashboard();
+  }
+
+  handleAnalyze(): void {
+    this.closeGameEndModal();
+    // Implement game analysis logic here
+    console.log('Analyze game requested');
   }
 }

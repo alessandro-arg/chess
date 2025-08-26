@@ -50,7 +50,7 @@ export class LatencyService {
         /https:\/\/[^.]+\.([a-z0-9-]+)\.firebasedatabase\.app/i
       );
       if (m) this.region = m[1];
-      this.serverLabel = this.region ? `RTDB - ${this.region}` : 'RTDB';
+      this.serverLabel = this.region ? `RTDB/${this.region}` : 'RTDB';
     }
   }
 

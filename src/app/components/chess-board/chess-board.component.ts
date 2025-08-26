@@ -10,7 +10,6 @@ import {
 } from '../../notification.service';
 import { AuthService } from '../../auth.service';
 import { UserService } from '../../user.service';
-import { GameParticipant } from '../../notification.service';
 import { GameRtdbService } from '../../game-rtdb.service';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
@@ -63,8 +62,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
   ];
 
-  boardView: (string | null)[][] = this.board;
-
   files: string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   ranks: string[] = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
@@ -72,6 +69,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   waiting = false;
   inviteId: string | null = null;
   vsUid: string | null = null;
+  vsProfile$ = of(null as any);
   gameId: string | null = null;
   gameSub?: Subscription;
   inviteSub?: Subscription;
@@ -80,7 +78,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   isBotGame = false;
   botLevel: BotLevel = 'medium';
   aiBusy = false;
-  lastAIFenProcessed: string | null = null;
   lastAIMoveAt: number | null = null;
   postedResult = false;
 
@@ -89,7 +86,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     private router: Router,
     private notifier: NotificationService,
     private auth: AuthService,
-    private userService: UserService,
+    public userService: UserService,
     private rtdbGame: GameRtdbService,
     private bot: BotService
   ) {}
@@ -105,6 +102,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       const invite = params.get('invite');
       const game = params.get('game');
       this.vsUid = params.get('vs');
+      this.vsProfile$ = this.vsUid
+        ? this.userService.userProfile$(this.vsUid)
+        : of(null);
 
       // cleanup when params change
       this.inviteSub?.unsubscribe();
@@ -114,6 +114,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         this.mode = 'waiting';
         this.waiting = true;
         this.inviteId = invite;
+        if (this.vsUid) this.hydrateWaitingHeader(this.vsUid);
         this.inviteSub = this.notifier
           .invite$(invite)
           .subscribe((inv) => this.onInviteChange(inv));
@@ -206,7 +207,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       return;
     }
     if (inv.status === 'accepted' && inv.gameId) {
-      // hop into the concrete game session
       if (!this.myUid) return;
       this.router.navigate([`/${this.myUid}/chess-board`], {
         queryParams: { game: inv.gameId },
@@ -214,22 +214,43 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     }
   }
 
+  private hydrateWaitingHeader(vsUid: string) {
+    // reuse the same subscription slot so onGameChange can replace it later
+    this.profilesSub?.unsubscribe();
+
+    const me$ = this.myUid
+      ? this.userService.userProfile$(this.myUid)
+      : of(null);
+    const opp$ = this.userService.userProfile$(vsUid);
+
+    this.profilesSub = combineLatest([me$, opp$]).subscribe(([me, opp]) => {
+      // me
+      this.myName = me?.displayName || me?.email || 'You';
+      this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
+      this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
+
+      // opponent
+      this.oppName = opp?.displayName || opp?.email || vsUid;
+      this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
+      this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+    });
+  }
+
   private onGameChange(game: GameDoc | null) {
     if (!game) return;
     if (!this.gameId || !this.myUid || !game.players) return;
-
-    // 1) Who am I? Who's the opponent?
-    const white = game.players.white;
-    const black = game.players.black;
-
-    this.myColor = white === this.myUid ? 'white' : 'black';
-    this.oppUid = this.myColor === 'white' ? black : white;
 
     this.isBotGame =
       game.mode === 'bot' ||
       game.players.black === 'BOT' ||
       game.players.white === 'BOT';
     this.botLevel = game.bot?.difficulty ?? 'medium';
+
+    // 1) Who am I? Who's the opponent?
+    const white = game.players.white;
+    const black = game.players.black;
+    this.myColor = white === this.myUid ? 'white' : 'black';
+    this.oppUid = this.myColor === 'white' ? black : white;
 
     // 2) Flip board orientation so the local player is on the bottom
     //    Also flip file/rank labels used for coordinates & rendering.
@@ -306,75 +327,65 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
     // 7) RTDB live game stream
     this.rtdbSub?.unsubscribe();
-    this.rtdbSub = this.rtdbGame
-      .game$(this.gameId!)
-      // Ignore presence or other noise: only react when fen or lastMoveAt actually change
-      .pipe(
-        distinctUntilChanged(
-          (a, b) =>
-            (!!a?.fen && !!b?.fen ? a.fen === b.fen : a?.fen === b?.fen) &&
-            a?.lastMoveAt === b?.lastMoveAt
-        )
-      )
-      .subscribe(async (g) => {
-        if (!g) return;
-
-        // 1) Render board + clocks
-        this.applyFen(g.fen);
-        if (this.myColor === 'black') {
-          // if you currently flip here and it works for MP, keep it; otherwise, remove.
-          this.board = this.board.map((row) => [...row].reverse()).reverse();
-        }
-        this.updateClocksDisplay(g, this.serverOffset);
-        this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
-        this.liveGame = g;
-
-        // 2) Post result once
-        if (!this.postedResult && g.result && g.status !== 'active') {
-          this.postedResult = true;
-          const statusMap: any = {
-            mate: 'mate',
-            draw: 'draw',
-            flag: 'flag',
-            resign: 'resign',
-          };
-          const status = statusMap[g.status] || 'finished';
-          this.notifier
-            .updateGameResult(this.gameId!, {
-              status,
-              result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
-            })
-            .catch(() => {});
-        }
-
-        // 3) Bot: act exactly once per unique FEN, only on bot's turn
-        if (this.isBotGame && g.status === 'active') {
-          const botIsWhite = g.players?.whiteUid === 'BOT';
-          const botsTurn =
-            (g.turn === 'w' && botIsWhite) || (g.turn === 'b' && !botIsWhite);
-
-          if (botsTurn && !this.aiBusy && this.lastAIFenProcessed !== g.fen) {
+    this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe(async (g) => {
+      if (this.isBotGame && g.status === 'active') {
+        const botColor: 'w' | 'b' = g.players?.blackUid === 'BOT' ? 'b' : 'w';
+        if (g.turn === botColor) {
+          if (!this.aiBusy && this.lastAIMoveAt !== g.lastMoveAt) {
             this.aiBusy = true;
-            this.lastAIFenProcessed = g.fen; // guard immediately so duplicates won’t queue
-
+            this.lastAIMoveAt = g.lastMoveAt;
             try {
-              // small human-like extra delay (on top of the bot’s internal delay if any)
-              await new Promise((r) =>
-                setTimeout(r, 180 + Math.floor(Math.random() * 220))
-              );
-
               const mv = await this.bot.pickMoveAsync(g.fen, this.botLevel);
               await this.rtdbGame.tryAIMove(this.gameId!, mv);
             } catch (e) {
               console.warn('AI move failed', e);
-              // If it failed because the position changed during thinking, the next FEN will differ
-              // and the bot will move then. No need to reset lastAIFenProcessed here.
             } finally {
               this.aiBusy = false;
             }
           }
         }
-      });
+      }
+
+      // record result once
+      if (!this.postedResult && g.result && g.status !== 'active') {
+        this.postedResult = true;
+        const statusMap: any = {
+          mate: 'mate',
+          draw: 'draw',
+          flag: 'flag',
+          resign: 'resign',
+        };
+        const status = statusMap[g.status] || 'finished';
+        this.notifier
+          .updateGameResult(this.gameId!, {
+            status,
+            result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
+          })
+          .catch(() => {});
+      }
+
+      if (!g) return;
+      // Apply FEN -> board
+      this.applyFen(g.fen);
+      // Flip the rendered board for Black so they see their pieces at bottom
+      if (this.myColor === 'black') {
+        this.board = this.board.map((row) => [...row].reverse()).reverse();
+      }
+      // Update clocks using server offset
+      this.updateClocksDisplay(g, this.serverOffset);
+      // RTDB presence (separate from Firestore presence)
+      this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
+      // Cache latest game
+      this.liveGame = g;
+    });
+
+    // 8) Smooth clock countdown in UI
+    if (this.clockTick) clearInterval(this.clockTick);
+    this.clockTick = setInterval(() => {
+      if (this.liveGame) {
+        this.updateClocksDisplay(this.liveGame, this.serverOffset);
+      }
+    }, 200);
   }
 
   async cancelWaiting() {
@@ -388,7 +399,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   private async returnToDashboard(message?: string) {
     if (!this.myUid) return;
-    if (message) alert(message);
+    if (message) console.log(message);
     // IMPORTANT: go to '/:uid/dashboard' (matches your routes)
     this.router.navigate([`/${this.myUid}/dashboard`]);
   }
@@ -465,7 +476,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     }
 
     if (isSelected) {
-      classes += 'ring-4 ring-blue-400 ring-opacity-70 ';
+      classes += 'bg-teal-300/80';
     }
 
     if (isHighlighted) {

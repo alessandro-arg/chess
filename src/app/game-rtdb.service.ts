@@ -4,12 +4,9 @@ import {
   ref,
   onValue,
   set,
-  update,
-  serverTimestamp as rtdbServerTs,
   runTransaction,
   push,
   onDisconnect,
-  get,
   child,
 } from '@angular/fire/database';
 import { Auth } from '@angular/fire/auth';
@@ -120,7 +117,7 @@ export class GameRtdbService {
         const newFen = chess.fen();
 
         // apply increment to the mover, then switch turn and set lastMoveAt
-        const incMs = 0; // tc.increment * 1000 — store increment on node if you want
+        const incMs = g.increment ? g.increment * 1000 : 0;
         if (g.turn === 'w') {
           g.remainingMs.w = after + incMs;
         } else {
@@ -165,23 +162,29 @@ export class GameRtdbService {
     move: { from: string; to: string; promotion?: 'q' | 'r' | 'b' | 'n' }
   ) {
     const base = ref(this.db, `rt-games/${gameId}`);
+
     await runTransaction(
       base,
       (g: any) => {
         if (!g || g.status !== 'active') return g;
 
-        // Ensure it's really the bot's turn
-        const botIsWhite = g.players?.whiteUid === 'BOT';
-        const botsTurn =
-          (g.turn === 'w' && botIsWhite) || (g.turn === 'b' && !botIsWhite);
-        if (!botsTurn) return g;
+        const botColor: Turn | null =
+          g.players?.whiteUid === 'BOT'
+            ? 'w'
+            : g.players?.blackUid === 'BOT'
+            ? 'b'
+            : null;
 
+        if (!botColor || g.turn !== botColor) return g; // not bot's turn
+
+        // time check on active side
         const now = Date.now();
         const elapsed = Math.max(0, now - (g.lastMoveAt || now));
         const remW = g.remainingMs?.w ?? 0;
         const remB = g.remainingMs?.b ?? 0;
         const remActive = g.turn === 'w' ? remW : remB;
-        if (remActive - elapsed <= 0) {
+        const after = remActive - elapsed;
+        if (after <= 0) {
           g.status = 'flag';
           g.result = g.turn === 'w' ? '0-1' : '1-0';
           return g;
@@ -193,21 +196,21 @@ export class GameRtdbService {
           to: move.to,
           promotion: move.promotion || 'q',
         });
-        if (!m) return g; // stale/illegal
+        if (!m) return g; // illegal
 
-        // clocks
+        const newFen = chess.fen();
         const incMs = g.increment ? g.increment * 1000 : 0;
-        if (g.turn === 'w') g.remainingMs.w = remW - elapsed + incMs;
-        else g.remainingMs.b = remB - elapsed + incMs;
-
-        // state flip
-        g.fen = chess.fen();
+        if (g.turn === 'w') {
+          g.remainingMs.w = after + incMs;
+        } else {
+          g.remainingMs.b = after + incMs;
+        }
+        g.fen = newFen;
         g.turn = g.turn === 'w' ? 'b' : 'w';
         g.lastMoveAt = now;
         g.moveNumber = chess.moveNumber();
         g.drawOffer = null;
 
-        // result?
         if (chess.isGameOver()) {
           if (chess.isCheckmate()) {
             g.status = 'mate';
@@ -223,12 +226,10 @@ export class GameRtdbService {
           }
         }
 
-        // moves log
+        const moves = g.moves || {};
         const id = push(child(base, 'moves')).key!;
-        g.moves = {
-          ...(g.moves || {}),
-          [id]: { san: m.san, by: 'BOT', at: now, fenAfter: g.fen },
-        };
+        moves[id] = { san: m.san, by: 'BOT', at: now, fenAfter: newFen };
+        g.moves = moves;
 
         return g;
       },

@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../auth.service';
@@ -17,6 +17,7 @@ import { GameInvite, NotificationService } from '../../notification.service';
 import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
 import { GameRtdbService } from '../../game-rtdb.service';
+import { LatencyService } from '../../latency.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,7 +26,7 @@ import { GameRtdbService } from '../../game-rtdb.service';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: UserProfile | null = null;
   displayName: string | null = null;
   photoURL: string | null = null;
@@ -52,6 +53,10 @@ export class DashboardComponent {
 
   private localSeenAt$ = new BehaviorSubject<number>(0);
 
+  latency$ = this.latencySvc.latency$;
+  connected$ = this.latencySvc.connected$;
+  serverLabel = this.latencySvc.serverLabel;
+
   constructor(
     private readonly auth: AuthService,
     private readonly route: ActivatedRoute,
@@ -60,7 +65,8 @@ export class DashboardComponent {
     private readonly notifier: NotificationService,
     private readonly userService: UserService,
     private readonly presence: PresenceService,
-    private readonly rtdbGame: GameRtdbService
+    private readonly rtdbGame: GameRtdbService,
+    private latencySvc: LatencyService
   ) {
     this.auth.user$.subscribe((user) => {
       this.uid = user?.uid ?? null;
@@ -173,8 +179,13 @@ export class DashboardComponent {
     });
   }
 
+  ngOnInit(): void {
+    this.latencySvc.start(5000);
+  }
+
   ngOnDestroy() {
     this.outgoingInvitesSub?.unsubscribe?.();
+    this.latencySvc.stop();
   }
 
   setBotDifficulty(level: 'easy' | 'medium' | 'hard') {
@@ -260,12 +271,6 @@ export class DashboardComponent {
     const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
     if (!uid) return;
     this.router.navigate(['/', uid, 'settings']);
-  }
-
-  openTestBoard(): void {
-    const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
-    if (!uid) return;
-    this.router.navigate(['/', uid, 'chess-board']);
   }
 
   async logout(): Promise<void> {

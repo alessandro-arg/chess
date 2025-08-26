@@ -21,6 +21,7 @@
             <div class="text-slate-200 font-semibold">
               {{ oppName }}
               <span
+                *ngIf="mode === 'game'"
                 class="ml-2 inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-500 text-slate-300"
               >
                 {{ oppColorBadge }}
@@ -117,6 +118,7 @@
             <div class="text-slate-200 font-semibold">
               {{ myName }}
               <span
+                *ngIf="mode === 'game'"
                 class="ml-2 inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-500 text-slate-300"
               >
                 {{ myColorBadge }}
@@ -170,8 +172,13 @@
         </h3>
       </div>
       <p class="text-slate-300 text-sm mb-5">
-        We've sent your game invitation<span *ngIf="vsUid">
-          to <strong>{{ vsUid }}</strong></span
+        We've sent your game invitation<span *ngIf="vsUid as uid">
+          <ng-container *ngIf="vsProfile$ | async as p; else showUid">
+            to <strong>{{ p?.displayName || p?.email || uid }}</strong>
+          </ng-container>
+          <ng-template #showUid
+            >to <strong>{{ uid }}</strong></ng-template
+          ></span
         >. Stay on this screen while they accept or decline.
       </p>
       <div class="flex items-center justify-end gap-3">

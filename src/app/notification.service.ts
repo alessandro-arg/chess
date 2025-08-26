@@ -17,7 +17,7 @@ import {
   addDoc,
 } from '@angular/fire/firestore';
 import { Auth } from '@angular/fire/auth';
-import { map, Observable, of, switchMap } from 'rxjs';
+import { map, Observable, of } from 'rxjs';
 import { GameRtdbService } from './game-rtdb.service';
 
 export interface GameInvite {
@@ -316,8 +316,12 @@ export class NotificationService {
 
   async createBotGame(cfg: BotGameCreate): Promise<string> {
     const gamesCol = collection(this.firestore, 'games');
-    const refDoc = await addDoc(gamesCol, {
-      players: { white: cfg.userUid, black: 'BOT', both: [cfg.userUid, 'BOT'] },
+    const ref = await addDoc(gamesCol, {
+      players: {
+        white: cfg.userUid,
+        black: 'BOT',
+        both: [cfg.userUid, 'BOT'],
+      },
       mode: 'bot',
       bot: { difficulty: cfg.difficulty },
       tc: { minutes: cfg.minutes, increment: cfg.increment },
@@ -326,13 +330,12 @@ export class NotificationService {
       updatedAt: serverTimestamp(),
     });
 
-    // create RTDB game too
-    await this.rtdbGame.create(refDoc.id, cfg.userUid, 'BOT', {
+    await this.rtdbGame.create(ref.id, cfg.userUid, 'BOT', {
       minutes: cfg.minutes,
       increment: cfg.increment,
     });
 
-    return refDoc.id;
+    return ref.id;
   }
 
   async updateGameResult(

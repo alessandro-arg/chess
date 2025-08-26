@@ -822,16 +822,24 @@
       >
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div
+              class="w-2 h-2 rounded-full"
+              [ngClass]="{
+                'bg-green-500 animate-pulse': (connected$ | async),
+                'bg-red-500': !(connected$ | async)
+              }"
+            ></div>
             <span>Connected to Chess²</span>
           </div>
           <div class="flex items-center gap-2">
             <span>Latency:</span>
-            <span class="text-steel-accent font-medium">23ms</span>
+            <span class="text-steel-accent font-medium">
+              {{ (latency$ | async) ?? "—" }}ms</span
+            >
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <span>Server: null</span>
+          <span>Server: {{ serverLabel }}</span>
           <time datetime="2025-01-21">Beta v1.0</time>
         </div>
       </div>

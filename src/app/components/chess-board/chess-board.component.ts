@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  HostListener,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, of, combineLatest } from 'rxjs';
 import { switchMap, map, distinctUntilChanged } from 'rxjs/operators';
@@ -12,7 +19,6 @@ import { AuthService } from '../../auth.service';
 import { UserService } from '../../user.service';
 import { GameRtdbService } from '../../game-rtdb.service';
 import { Chess } from 'chess.js';
-import type { Square } from 'chess.js';
 import { BotService, BotLevel } from '../../bot.service';
 import { GameEndComponent, GameEndData } from '../game-end/game-end.component';
 
@@ -87,6 +93,17 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   showGameEndModal = false;
   gameEndData: GameEndData | null = null;
+
+  @ViewChild('boardGrid', { static: false })
+  boardGrid?: ElementRef<HTMLDivElement>;
+
+  dragging = false;
+  dragFrom: { row: number; col: number } | null = null;
+  dragPiece: string | null = null;
+  dragImageSrc = '';
+  dragX = 0;
+  dragY = 0;
+  dragSquarePx = 64;
 
   constructor(
     private route: ActivatedRoute,
@@ -611,22 +628,19 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     let classes =
       'relative flex items-center justify-center cursor-pointer transition-all duration-200 ';
 
-    if (isLight) {
-      classes += 'bg-slate-100 ';
-    } else {
-      classes += 'bg-slate-700 ';
-    }
+    classes += isLight ? 'bg-slate-100 ' : 'bg-slate-700 ';
 
     if (isSelected) {
-      classes += 'bg-teal-300/80';
+      classes += 'bg-sky-500/90 ';
     }
 
     if (isHighlighted) {
       classes +=
-        "after:content-[''] after:absolute after:inset-2 after:bg-emerald-400 after:bg-opacity-30 after:rounded-full ";
+        "after:content-[''] after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 " +
+        'after:w-[40%] after:h-[40%] after:rounded-full after:bg-slate-900 after:bg-opacity-60 ';
     }
 
-    classes += 'hover:shadow-lg ';
+    classes += 'hover:opacity-90 ';
 
     return classes;
   }
@@ -679,6 +693,203 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       )
     );
     this.liveGame = { ...(this.liveGame || {}), fen };
+  }
+
+  private getSquareSizePx(): number {
+    const el = this.boardGrid?.nativeElement;
+    if (!el) return 64;
+    const rect = el.getBoundingClientRect();
+    const size = Math.min(rect.width, rect.height) / 8;
+    return size || 64;
+  }
+
+  private getBoardRect(): DOMRect | null {
+    return this.boardGrid?.nativeElement?.getBoundingClientRect() ?? null;
+  }
+
+  private pointToBoardCell(
+    clientX: number,
+    clientY: number
+  ): { row: number; col: number } | null {
+    const rect = this.getBoardRect();
+    if (!rect) return null;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+    const col = Math.floor((x / rect.width) * 8);
+    const row = Math.floor((y / rect.height) * 8);
+    // Clamp just in case
+    return {
+      row: Math.min(7, Math.max(0, row)),
+      col: Math.min(7, Math.max(0, col)),
+    };
+  }
+
+  onPointerDownSquare(row: number, col: number, ev: PointerEvent) {
+    // Only start dragging if a piece is on the square
+    const piece = this.board[row][col];
+    if (!piece) return;
+
+    // Optional: prevent dragging opponent pieces (comment out if you allow preview)
+    try {
+      const c = new Chess(this.liveGame?.fen);
+      const from = this.toAlgebraic(row, col);
+      const p = c.get(from as any);
+      if (!p || p.color !== c.turn()) {
+        // Not your turn → ignore drag start; keep click-to-select behavior
+        return;
+      }
+    } catch {
+      // fail open
+    }
+
+    ev.preventDefault();
+
+    this.dragging = true;
+    this.dragFrom = { row, col };
+    this.dragPiece = piece;
+    this.dragImageSrc = this.pieceSrc(piece);
+    this.dragSquarePx = this.getSquareSizePx();
+
+    // Reuse your highlight logic (same as in click select)
+    this.selectedSquare = `${col}-${row}`;
+    const c = new Chess(this.liveGame?.fen);
+    const from = this.toAlgebraic(row, col);
+    const moves = c.moves({ square: from as any, verbose: true }) as Array<{
+      to: string;
+    }>;
+    let highlights = moves.map((m) => this.algebraicToCellId(m.to));
+
+    const selectedPiece = c.get(from as any);
+    if (selectedPiece?.type === 'r' && selectedPiece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles) {
+        if (opt.rookFrom === from)
+          highlights.push(this.algebraicToCellId(opt.kingTo));
+      }
+    }
+    if (selectedPiece?.type === 'k' && selectedPiece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles)
+        highlights.push(this.algebraicToCellId(opt.rookFrom));
+    }
+    this.highlightedSquares = Array.from(new Set(highlights));
+
+    // set initial ghost position
+    this.dragX = ev.clientX;
+    this.dragY = ev.clientY;
+  }
+
+  onPointerMoveBoard(ev: PointerEvent) {
+    if (!this.dragging) return;
+    ev.preventDefault();
+    this.dragX = ev.clientX;
+    this.dragY = ev.clientY;
+  }
+
+  onPointerUpBoard(ev: PointerEvent) {
+    this.finishDragAt(ev.clientX, ev.clientY);
+  }
+
+  private finishDragAt(clientX: number, clientY: number) {
+    if (!this.dragging) return;
+
+    const drop = this.pointToBoardCell(clientX, clientY);
+    const from = this.dragFrom;
+    const piece = this.dragPiece;
+
+    // reset drag state immediately so UI feels snappy
+    this.dragging = false;
+    this.dragPiece = null;
+
+    if (!from || !piece || !drop) {
+      // dropped outside / no origin → clear and bail
+      this.dragFrom = null;
+      this.selectedSquare = null;
+      this.highlightedSquares = [];
+      return;
+    }
+
+    const fromAlg = this.toAlgebraic(from.row, from.col);
+    const toAlg = this.toAlgebraic(drop.row, drop.col);
+
+    if (!this.gameId) {
+      this.dragFrom = null;
+      this.selectedSquare = null;
+      this.highlightedSquares = [];
+      return;
+    }
+
+    try {
+      const c = new Chess(this.liveGame?.fen);
+      const pieceFrom = c.get(fromAlg as any);
+      const castles = this.getCastleOptions(c);
+
+      const matchByRookFirst = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'r' &&
+          opt.rookFrom === fromAlg &&
+          opt.kingTo === toAlg
+      );
+      const matchByKingToRook = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'k' &&
+          opt.kingFrom === fromAlg &&
+          opt.rookFrom === toAlg
+      );
+
+      const p = matchByRookFirst
+        ? this.rtdbGame.tryMove(this.gameId, {
+            from: matchByRookFirst.kingFrom as any,
+            to: matchByRookFirst.kingTo as any,
+          })
+        : matchByKingToRook
+        ? this.rtdbGame.tryMove(this.gameId, {
+            from: matchByKingToRook.kingFrom as any,
+            to: matchByKingToRook.kingTo as any,
+          })
+        : this.rtdbGame.tryMove(this.gameId, {
+            from: fromAlg,
+            to: toAlg,
+            promotion: 'q',
+          });
+
+      // IMPORTANT: on resolve or reject, clear selection + previews
+      Promise.resolve(p).finally(() => {
+        this.dragFrom = null;
+        this.selectedSquare = null;
+        this.highlightedSquares = [];
+      });
+    } catch {
+      // on any local error, also clear
+      this.dragFrom = null;
+      this.selectedSquare = null;
+      this.highlightedSquares = [];
+    }
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  onWindowPointerUp(ev: PointerEvent) {
+    this.finishDragAt(ev.clientX, ev.clientY);
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMove(ev: PointerEvent) {
+    if (!this.dragging) return;
+    this.dragX = ev.clientX;
+    this.dragY = ev.clientY;
+  }
+
+  // Escape/cancel drag with ESC key
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(ev: KeyboardEvent) {
+    if (ev.key === 'Escape' && this.dragging) {
+      this.dragging = false;
+      this.dragFrom = null;
+      this.dragPiece = null;
+      this.selectedSquare = null;
+      this.highlightedSquares = [];
+    }
   }
 
   updateClocksDisplay(g: any, offset: number) {

@@ -48,13 +48,17 @@
         <!-- Main Board -->
         <div class="relative">
           <div
-            class="grid grid-cols-8 gap-0 rounded-lg overflow-hidden shadow-inner border-2 border-slate-600"
+            #boardGrid
+            class="grid grid-cols-8 gap-0 rounded-lg overflow-hidden shadow-inner border-2 border-slate-600 touch-none select-none"
+            (pointermove)="onPointerMoveBoard($event)"
+            (pointerup)="onPointerUpBoard($event)"
           >
             <div *ngFor="let row of board; let rowIndex = index">
               <div
                 *ngFor="let square of row; let colIndex = index"
                 [class]="getSquareClasses(rowIndex, colIndex)"
                 (click)="handleSquareClick(rowIndex, colIndex)"
+                (pointerdown)="onPointerDownSquare(rowIndex, colIndex, $event)"
                 style="
                   width: clamp(50px, 10vw, 100px);
                   height: clamp(50px, 10vw, 100px);
@@ -66,6 +70,14 @@
                     [alt]="s"
                     draggable="false"
                     class="pointer-events-none select-none w-[80%] h-[80%] object-contain transition-transform duration-200 hover:scale-105 drop-shadow-lg"
+                    [style.opacity]="
+                      dragging &&
+                      dragFrom &&
+                      dragFrom.row === rowIndex &&
+                      dragFrom.col === colIndex
+                        ? 0.2
+                        : 1
+                    "
                     style="filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))"
                   />
                 </ng-container>
@@ -93,6 +105,17 @@
       </div>
     </div>
   </div>
+
+  <img
+    *ngIf="dragging && dragImageSrc"
+    [src]="dragImageSrc"
+    alt="drag-ghost"
+    class="fixed pointer-events-none z-[70] drop-shadow-xl"
+    [style.left.px]="dragX - dragSquarePx * 0.4"
+    [style.top.px]="dragY - dragSquarePx * 0.4"
+    [style.width.px]="dragSquarePx * 0.8"
+    [style.height.px]="dragSquarePx * 0.8"
+  />
 
   <!-- Game Footer -->
   <div

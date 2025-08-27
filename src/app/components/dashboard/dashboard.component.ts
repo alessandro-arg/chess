@@ -18,11 +18,12 @@ import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
 import { GameRtdbService } from '../../game-rtdb.service';
 import { LatencyService } from '../../latency.service';
+import { LiveClockComponent } from '../live-clock/live-clock.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FriendsModalComponent],
+  imports: [CommonModule, FriendsModalComponent, LiveClockComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })

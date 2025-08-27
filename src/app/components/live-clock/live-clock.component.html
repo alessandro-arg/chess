@@ -1,0 +1,3 @@
+<time [attr.datetime]="now().toISOString()" class="font-medium text-white">
+  {{ now() | date : "HH:mm" : "Europe/Berlin" }}
+</time>

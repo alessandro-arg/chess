@@ -105,6 +105,13 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   dragY = 0;
   dragSquarePx = 64;
 
+  dragArmed = false;
+  dragArmX = 0;
+  dragArmY = 0;
+  dragThresholdPx = 14;
+
+  showStartMessage = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -239,7 +246,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   private hydrateWaitingHeader(vsUid: string) {
-    // reuse the same subscription slot so onGameChange can replace it later
     this.profilesSub?.unsubscribe();
 
     const me$ = this.myUid
@@ -248,12 +254,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     const opp$ = this.userService.userProfile$(vsUid);
 
     this.profilesSub = combineLatest([me$, opp$]).subscribe(([me, opp]) => {
-      // me
       this.myName = me?.displayName || me?.email || 'You';
       this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
       this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
-
-      // opponent
       this.oppName = opp?.displayName || opp?.email || vsUid;
       this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
       this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
@@ -348,6 +351,14 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.offsetSub = this.rtdbGame.serverOffset$().subscribe((o) => {
       this.serverOffset = o ?? 0;
     });
+
+    if (game.status === 'active' && !this.liveGame) {
+      // First time we see the active game → show start message
+      this.showStartMessage = true;
+      setTimeout(() => {
+        this.showStartMessage = false;
+      }, 4000); // show for 4 seconds
+    }
 
     // 7) RTDB live game stream
     this.rtdbSub?.unsubscribe();
@@ -520,102 +531,105 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   handleSquareClick(row: number, col: number): void {
     const squareId = `${col}-${row}`;
+
     if (this.selectedSquare) {
       if (this.selectedSquare === squareId) {
+        // toggle off when clicking the same square
         this.selectedSquare = null;
         this.highlightedSquares = [];
-      } else {
-        const [fromCol, fromRow] = this.selectedSquare.split('-').map(Number);
-        const from = this.toAlgebraic(fromRow, fromCol);
-        const to = this.toAlgebraic(row, col);
+        return;
+      }
+
+      // We had something selected; decide if this is a move, a castle, or a reselection
+      const [fromCol, fromRow] = this.selectedSquare.split('-').map(Number);
+      const from = this.toAlgebraic(fromRow, fromCol);
+      const to = this.toAlgebraic(row, col);
+
+      const c = new Chess(this.liveGame?.fen);
+      const pieceFrom = c.get(from as any);
+      const pieceTo = c.get(to as any);
+
+      // Compute castling options once
+      const castles = this.getCastleOptions(c);
+      const matchByRookFirst = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'r' && opt.rookFrom === from && opt.kingTo === to
+      );
+      const matchByKingToRook = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'k' &&
+          opt.kingFrom === from &&
+          opt.rookFrom === to
+      );
+      const matchByRookToKing = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'r' &&
+          opt.rookFrom === from &&
+          opt.kingFrom === to
+      );
+
+      // --- Special-case: castling clicks should still trigger the castle ---
+      if (matchByRookFirst && this.gameId) {
         this.selectedSquare = null;
         this.highlightedSquares = [];
-
-        if (this.gameId) {
-          const c = new Chess(this.liveGame?.fen);
-          const side = c.turn(); // 'w' | 'b'
-          const pieceFrom = c.get(from as any);
-
-          const castles = this.getCastleOptions(c); // only when actually legal in current FEN
-          const matchByRookFirst = castles.find(
-            (opt) =>
-              pieceFrom?.type === 'r' &&
-              opt.rookFrom === from &&
-              opt.kingTo === to
+        this.rtdbGame
+          .tryMove(this.gameId, {
+            from: matchByRookFirst.kingFrom as any,
+            to: matchByRookFirst.kingTo as any,
+          })
+          .catch((err) =>
+            console.warn('illegal/failed castle (rook-first)', err)
           );
-          const matchByKingToRook = castles.find(
-            (opt) =>
-              pieceFrom?.type === 'k' &&
-              opt.kingFrom === from &&
-              opt.rookFrom === to
+        return;
+      }
+      if (matchByKingToRook && this.gameId) {
+        this.selectedSquare = null;
+        this.highlightedSquares = [];
+        this.rtdbGame
+          .tryMove(this.gameId, {
+            from: matchByKingToRook.kingFrom as any,
+            to: matchByKingToRook.kingTo as any,
+          })
+          .catch((err) =>
+            console.warn('illegal/failed castle (king-to-rook)', err)
           );
-
-          // Case 1: rook-first UX (rook clicked → click king's destination)
-          if (matchByRookFirst) {
-            this.rtdbGame
-              .tryMove(this.gameId, {
-                from: matchByRookFirst.kingFrom as any,
-                to: matchByRookFirst.kingTo as any,
-              })
-              .catch((err) =>
-                console.warn('illegal/failed castle (rook-first)', err)
-              );
-            return;
-          }
-
-          // Case 2: king-first but user clicked the ROOK square
-          if (matchByKingToRook) {
-            this.rtdbGame
-              .tryMove(this.gameId, {
-                from: matchByKingToRook.kingFrom as any,
-                to: matchByKingToRook.kingTo as any,
-              })
-              .catch((err) =>
-                console.warn('illegal/failed castle (king-to-rook)', err)
-              );
-            return;
-          }
-
-          // Normal move (includes king → g/c when legal)
-          this.rtdbGame
-            .tryMove(this.gameId, { from, to, promotion: 'q' })
-            .catch((err) => console.warn('illegal/failed move', err));
-        }
+        return;
       }
-    } else {
-      if (this.board[row][col]) {
-        this.selectedSquare = squareId;
-        // (optional) highlight legal moves by running chess.js locally from live FEN
-        const c = new Chess(this.liveGame?.fen);
-        const from = this.toAlgebraic(row, col);
-        const moves = c.moves({ square: from as any, verbose: true }) as Array<{
-          to: string;
-        }>;
-        let highlights = moves.map((m) => this.algebraicToCellId(m.to));
-
-        // Extra hints for castling UX:
-        const piece = c.get(from as any);
-
-        // If a ROOK is selected, also highlight the king's castle destination squares (when legal)
-        if (piece?.type === 'r' && piece?.color === c.turn()) {
-          const castles = this.getCastleOptions(c);
-          for (const opt of castles) {
-            if (opt.rookFrom === from) {
-              highlights.push(this.algebraicToCellId(opt.kingTo));
-            }
-          }
-        }
-
-        // If the KING is selected, also highlight the rook squares you can click to trigger castling
-        if (piece?.type === 'k' && piece?.color === c.turn()) {
-          const castles = this.getCastleOptions(c);
-          for (const opt of castles) {
-            highlights.push(this.algebraicToCellId(opt.rookFrom));
-          }
-        }
-
-        this.highlightedSquares = Array.from(new Set(highlights));
+      if (matchByRookToKing && this.gameId) {
+        this.selectedSquare = null;
+        this.highlightedSquares = [];
+        this.rtdbGame
+          .tryMove(this.gameId, {
+            from: matchByRookToKing.kingFrom as any,
+            to: matchByRookToKing.kingTo as any,
+          })
+          .catch((err) =>
+            console.warn('illegal/failed castle (rook-to-king)', err)
+          );
+        return;
       }
+
+      // --- If target square has our own piece (same color), just RESELECT it ---
+      if (pieceFrom && pieceTo && pieceFrom.color === pieceTo.color) {
+        this.selectSquareAndShowMoves(row, col);
+        return;
+      }
+
+      // --- Otherwise, attempt a normal move/capture ---
+      this.selectedSquare = null;
+      this.highlightedSquares = [];
+
+      if (this.gameId) {
+        this.rtdbGame
+          .tryMove(this.gameId, { from, to, promotion: 'q' })
+          .catch((err) => console.warn('illegal/failed move', err));
+      }
+      return;
+    }
+
+    // Nothing selected yet: select the piece on this square (if any)
+    if (this.board[row][col]) {
+      this.selectSquareAndShowMoves(row, col);
     }
   }
 
@@ -631,7 +645,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     classes += isLight ? 'bg-slate-100 ' : 'bg-slate-700 ';
 
     if (isSelected) {
-      classes += 'bg-sky-500/90 ';
+      classes += 'bg-sky-400/90';
     }
 
     if (isHighlighted) {
@@ -725,34 +739,75 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     };
   }
 
+  private startDraggingFromArmed(ev: PointerEvent) {
+    if (!this.dragArmed || this.dragging || !this.dragFrom) return;
+    this.dragging = true;
+    this.dragSquarePx = this.getSquareSizePx();
+    this.dragX = ev.clientX;
+    this.dragY = ev.clientY;
+
+    // Show highlights during drag (same logic as your click-select)
+    const row = this.dragFrom.row;
+    const col = this.dragFrom.col;
+    this.selectedSquare = `${col}-${row}`;
+
+    const c = new Chess(this.liveGame?.fen);
+    const from = this.toAlgebraic(row, col);
+    const moves = c.moves({ square: from as any, verbose: true }) as Array<{
+      to: string;
+    }>;
+    let highlights = moves.map((m) => this.algebraicToCellId(m.to));
+
+    const piece = c.get(from as any);
+    if (piece?.type === 'r' && piece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles)
+        if (opt.rookFrom === from) {
+          highlights.push(this.algebraicToCellId(opt.kingTo));
+          highlights.push(this.algebraicToCellId(opt.kingFrom));
+        }
+    }
+    if (piece?.type === 'k' && piece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles)
+        highlights.push(this.algebraicToCellId(opt.rookFrom));
+    }
+
+    this.highlightedSquares = Array.from(new Set(highlights));
+  }
+
   onPointerDownSquare(row: number, col: number, ev: PointerEvent) {
-    // Only start dragging if a piece is on the square
     const piece = this.board[row][col];
     if (!piece) return;
 
-    // Optional: prevent dragging opponent pieces (comment out if you allow preview)
     try {
       const c = new Chess(this.liveGame?.fen);
       const from = this.toAlgebraic(row, col);
       const p = c.get(from as any);
       if (!p || p.color !== c.turn()) {
-        // Not your turn → ignore drag start; keep click-to-select behavior
+        this.dragArmed = false;
+        this.dragFrom = null;
         return;
       }
     } catch {
-      // fail open
+      this.dragArmed = false;
+      this.dragFrom = null;
+      return;
     }
 
-    ev.preventDefault();
+    this.dragArmed = true;
+    this.dragArmX = ev.clientX;
+    this.dragArmY = ev.clientY;
 
-    this.dragging = true;
+    this.dragging = false;
     this.dragFrom = { row, col };
     this.dragPiece = piece;
     this.dragImageSrc = this.pieceSrc(piece);
     this.dragSquarePx = this.getSquareSizePx();
 
-    // Reuse your highlight logic (same as in click select)
-    this.selectedSquare = `${col}-${row}`;
+    this.dragX = ev.clientX;
+    this.dragY = ev.clientY;
+
     const c = new Chess(this.liveGame?.fen);
     const from = this.toAlgebraic(row, col);
     const moves = c.moves({ square: from as any, verbose: true }) as Array<{
@@ -766,6 +821,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       for (const opt of castles) {
         if (opt.rookFrom === from)
           highlights.push(this.algebraicToCellId(opt.kingTo));
+        highlights.push(this.algebraicToCellId(opt.kingFrom));
       }
     }
     if (selectedPiece?.type === 'k' && selectedPiece?.color === c.turn()) {
@@ -774,25 +830,33 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         highlights.push(this.algebraicToCellId(opt.rookFrom));
     }
     this.highlightedSquares = Array.from(new Set(highlights));
-
-    // set initial ghost position
-    this.dragX = ev.clientX;
-    this.dragY = ev.clientY;
   }
 
   onPointerMoveBoard(ev: PointerEvent) {
+    // Promote to drag if threshold passed
+    if (this.dragArmed && !this.dragging) {
+      const dx = ev.clientX - this.dragArmX;
+      const dy = ev.clientY - this.dragArmY;
+      if (dx * dx + dy * dy >= this.dragThresholdPx * this.dragThresholdPx) {
+        this.startDraggingFromArmed(ev);
+      }
+    }
     if (!this.dragging) return;
-    ev.preventDefault();
+    ev.preventDefault(); // only prevent default once dragging
     this.dragX = ev.clientX;
     this.dragY = ev.clientY;
   }
 
   onPointerUpBoard(ev: PointerEvent) {
+    const wasDragging = this.dragging;
+    this.dragArmed = false;
+    if (!wasDragging) return;
     this.finishDragAt(ev.clientX, ev.clientY);
   }
 
   private finishDragAt(clientX: number, clientY: number) {
     if (!this.dragging) return;
+    this.dragArmed = false;
 
     const drop = this.pointToBoardCell(clientX, clientY);
     const from = this.dragFrom;
@@ -837,6 +901,12 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
           opt.kingFrom === fromAlg &&
           opt.rookFrom === toAlg
       );
+      const matchByRookToKing = castles.find(
+        (opt) =>
+          pieceFrom?.type === 'r' &&
+          opt.rookFrom === fromAlg &&
+          opt.kingFrom === toAlg
+      );
 
       const p = matchByRookFirst
         ? this.rtdbGame.tryMove(this.gameId, {
@@ -847,6 +917,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         ? this.rtdbGame.tryMove(this.gameId, {
             from: matchByKingToRook.kingFrom as any,
             to: matchByKingToRook.kingTo as any,
+          })
+        : matchByRookToKing
+        ? this.rtdbGame.tryMove(this.gameId, {
+            from: matchByRookToKing.kingFrom as any,
+            to: matchByRookToKing.kingTo as any,
           })
         : this.rtdbGame.tryMove(this.gameId, {
             from: fromAlg,
@@ -868,14 +943,55 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     }
   }
 
+  private selectSquareAndShowMoves(row: number, col: number): void {
+    this.selectedSquare = `${col}-${row}`;
+
+    const c = new Chess(this.liveGame?.fen);
+    const from = this.toAlgebraic(row, col);
+    const moves = c.moves({ square: from as any, verbose: true }) as Array<{
+      to: string;
+    }>;
+    let highlights = moves.map((m) => this.algebraicToCellId(m.to));
+
+    const piece = c.get(from as any);
+
+    // Extra castling hints (same logic you already use)
+    if (piece?.type === 'r' && piece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles) {
+        if (opt.rookFrom === from)
+          highlights.push(this.algebraicToCellId(opt.kingTo));
+        highlights.push(this.algebraicToCellId(opt.kingFrom));
+      }
+    }
+    if (piece?.type === 'k' && piece?.color === c.turn()) {
+      const castles = this.getCastleOptions(c);
+      for (const opt of castles)
+        highlights.push(this.algebraicToCellId(opt.rookFrom));
+    }
+
+    this.highlightedSquares = Array.from(new Set(highlights));
+  }
+
   @HostListener('window:pointerup', ['$event'])
   onWindowPointerUp(ev: PointerEvent) {
+    const wasDragging = this.dragging;
+    this.dragArmed = false;
+    if (!wasDragging) return; // plain click → let (click) handler run
     this.finishDragAt(ev.clientX, ev.clientY);
   }
 
   @HostListener('window:pointermove', ['$event'])
   onWindowPointerMove(ev: PointerEvent) {
+    if (this.dragArmed && !this.dragging) {
+      const dx = ev.clientX - this.dragArmX;
+      const dy = ev.clientY - this.dragArmY;
+      if (dx * dx + dy * dy >= this.dragThresholdPx * this.dragThresholdPx) {
+        this.startDraggingFromArmed(ev);
+      }
+    }
     if (!this.dragging) return;
+    ev.preventDefault();
     this.dragX = ev.clientX;
     this.dragY = ev.clientY;
   }

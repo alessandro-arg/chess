@@ -39,6 +39,19 @@
     </div>
   </div>
 
+  <div
+    *ngIf="showStartMessage"
+    class="h-dvh w-dvw absolute top-0 left-0 bg-black/20 transition-all duration-500 z-[80] flex justify-center items-center"
+  >
+    <div class="flex justify-center transition-all duration-500 mx-3">
+      <div
+        class="bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fadeInOut"
+      >
+        The game is starting! Good luck and have fun 🎉
+      </div>
+    </div>
+  </div>
+
   <!-- Chess Board Container -->
   <div class="relative">
     <div

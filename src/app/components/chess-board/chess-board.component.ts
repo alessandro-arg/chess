@@ -112,6 +112,19 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   showStartMessage = false;
 
+  endAnimActive = false;
+  endAnimType: 'flag' | 'mate' | 'resign' | 'draw' | null = null;
+  winnerColor: 'w' | 'b' | null = null;
+  loserColor: 'w' | 'b' | null = null;
+  kingPos: {
+    w: { row: number; col: number } | null;
+    b: { row: number; col: number } | null;
+  } = {
+    w: null,
+    b: null,
+  };
+  endAnimMs = 3000;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -432,7 +445,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
           myUid: this.myUid!,
         };
 
-        this.showGameEndModal = true;
+        this.triggerEndAnimationAndModal(g);
         return;
       }
 
@@ -1028,6 +1041,93 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     const meWhite = this.myColor === 'white';
     this.myClockDisplay = fmt(meWhite ? wNow : bNow);
     this.oppClockDisplay = fmt(meWhite ? bNow : wNow);
+  }
+
+  private findKingPositionsFromBoard() {
+    // board is already oriented for the local player (you reverse for black after FEN)
+    let w: { row: number; col: number } | null = null;
+    let b: { row: number; col: number } | null = null;
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = this.board[r][c];
+        if (cell === 'K') w = { row: r, col: c };
+        if (cell === 'k') b = { row: r, col: c };
+      }
+    }
+    this.kingPos = { w, b };
+  }
+
+  isWinnerKingCell(row: number, col: number): boolean {
+    if (!this.endAnimActive || !this.winnerColor) return false;
+    const kp = this.kingPos[this.winnerColor];
+    return !!kp && kp.row === row && kp.col === col;
+  }
+
+  isLoserKingCell(row: number, col: number): boolean {
+    if (!this.endAnimActive || !this.loserColor) return false;
+    const kp = this.kingPos[this.loserColor];
+    return !!kp && kp.row === row && kp.col === col;
+  }
+
+  private triggerEndAnimationAndModal(g: any) {
+    // Determine reason
+    this.endAnimType =
+      (g.status as 'mate' | 'flag' | 'resign' | 'draw') ?? null;
+
+    // Determine winner/loser from result
+    // '1-0' => white wins, '0-1' => black wins, '1/2-1/2' => draw
+    if (g.result === '1-0') {
+      this.winnerColor = 'w';
+      this.loserColor = 'b';
+    } else if (g.result === '0-1') {
+      this.winnerColor = 'b';
+      this.loserColor = 'w';
+    } else {
+      this.winnerColor = null;
+      this.loserColor = null;
+    }
+
+    // Find king positions on the *rendered* board
+    this.findKingPositionsFromBoard();
+
+    // If draw, we can skip or later add a neutral effect; for now no badges
+    this.endAnimActive = this.endAnimType !== 'draw';
+
+    // After a short pause, open your existing modal
+    setTimeout(() => {
+      // prepare modal data exactly like you already do
+      const myIsWhite = this.myColor === 'white';
+      // (Optionally compute outcome here if you need it elsewhere)
+      this.gameEndData = {
+        gameId: this.gameId!,
+        result: g.result as '1-0' | '0-1' | '1/2-1/2',
+        status: g.status as 'mate' | 'draw' | 'flag' | 'resign' | 'finished',
+        myColor: this.myColor!,
+        myProfile: {
+          name: this.myName,
+          photoURL: this.myPhotoURL,
+          elo: this.myElo,
+        },
+        oppProfile: {
+          name: this.oppName,
+          photoURL: this.oppPhotoURL,
+          elo: this.oppElo,
+        },
+        myUid: this.myUid!,
+      };
+
+      // Show the modal now
+      this.showGameEndModal = true;
+
+      // Clear the overlay state shortly after the modal opens
+      setTimeout(() => {
+        this.endAnimActive = false;
+        this.endAnimType = null;
+        this.winnerColor = null;
+        this.loserColor = null;
+        this.kingPos = { w: null, b: null };
+      }, 300);
+    }, this.endAnimMs);
   }
 
   closeGameEndModal(): void {

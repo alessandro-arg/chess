@@ -24,3 +24,31 @@
 .animate-fadeInOut {
   animation: fadeInOut 4s ease-in-out forwards;
 }
+
+.end-badge {
+  transform-origin: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+@keyframes endPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-end-pop {
+  animation: endPop 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}

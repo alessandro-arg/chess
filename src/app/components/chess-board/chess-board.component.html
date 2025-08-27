@@ -93,6 +93,202 @@
                     "
                     style="filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))"
                   />
+                  <div
+                    *ngIf="
+                      endAnimActive && isWinnerKingCell(rowIndex, colIndex)
+                    "
+                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[65]"
+                  >
+                    <div class="end-badge animate-end-pop">
+                      <ng-container [ngSwitch]="endAnimType">
+                        <!-- Time win => green clock -->
+                        <svg
+                          *ngSwitchCase="'flag'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-emerald-500/90"
+                          ></circle>
+                          <path
+                            d="M12 6v6l4 2"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Checkmate win => green check -->
+                        <svg
+                          *ngSwitchCase="'mate'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-emerald-500/90"
+                          ></circle>
+                          <path
+                            d="M7 12l3 3 7-7"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Resign win => green flag (optional) -->
+                        <svg
+                          *ngSwitchCase="'resign'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-emerald-500/90"
+                          ></circle>
+                          <path
+                            d="M7 17V7m0 0h6l-1 2 1 2H7"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Default to check -->
+                        <svg
+                          *ngSwitchDefault
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-emerald-500/90"
+                          ></circle>
+                          <path
+                            d="M7 12l3 3 7-7"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </ng-container>
+                    </div>
+                  </div>
+
+                  <!-- LOSER badge (red) -->
+                  <div
+                    *ngIf="endAnimActive && isLoserKingCell(rowIndex, colIndex)"
+                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[65]"
+                  >
+                    <div class="end-badge animate-end-pop">
+                      <ng-container [ngSwitch]="endAnimType">
+                        <!-- Time loss => red clock -->
+                        <svg
+                          *ngSwitchCase="'flag'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-red-500/90"
+                          ></circle>
+                          <path
+                            d="M12 6v6l4 2"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Checkmate loss => red X -->
+                        <svg
+                          *ngSwitchCase="'mate'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-red-500/90"
+                          ></circle>
+                          <path
+                            d="M8 8l8 8M16 8l-8 8"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Resign loss => red flag -->
+                        <svg
+                          *ngSwitchCase="'resign'"
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-red-500/90"
+                          ></circle>
+                          <path
+                            d="M7 17V7m0 0h6l-1 2 1 2H7"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <!-- Default to X -->
+                        <svg
+                          *ngSwitchDefault
+                          viewBox="0 0 24 24"
+                          class="w-9 h-9"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            class="fill-red-500/90"
+                          ></circle>
+                          <path
+                            d="M8 8l8 8M16 8l-8 8"
+                            class="stroke-white"
+                            stroke-width="2"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </ng-container>
+                    </div>
+                  </div>
                 </ng-container>
 
                 <!-- Coordinate Labels (bottom row only) -->

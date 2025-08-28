@@ -1,0 +1,103 @@
+<!-- Backdrop -->
+<div
+  class="fixed inset-0 z-[1000] transition-opacity duration-200"
+  [class.pointer-events-none]="!open"
+  [class.opacity-0]="!open"
+  [class.opacity-100]="open"
+  (click)="onBackdrop()"
+>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+</div>
+
+<!-- Sheet -->
+<div
+  class="fixed inset-0 z-[1001] grid place-items-center"
+  [class.pointer-events-none]="!open"
+>
+  <div
+    class="w-[min(92vw,420px)] rounded-2xl border border-white/15 bg-[#1c1f25] shadow-[0_10px_30px_rgba(0,0,0,0.45)] relative transition-all duration-200 px-4 pt-4 pb-3 before:absolute before:inset-0 before:bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.08),transparent_70%)] before:rounded-2xl after:absolute after:inset-0 after:rounded-2xl after:border after:border-white/10"
+    [class.opacity-0]="!open"
+    [class.scale-95]="!open"
+    [class.translate-y-2]="!open"
+    [class.opacity-100]="open"
+    [class.scale-100]="open"
+    [class.translate-y-0]="open"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      color === 'w'
+        ? 'Choose white promotion piece'
+        : 'Choose black promotion piece'
+    "
+  >
+    <div
+      class="text-center text-slate-200 font-semibold text-sm tracking-wide mb-3"
+    >
+      Choose promotion
+    </div>
+
+    <div
+      class="grid grid-cols-4 gap-2 p-2 rounded-xl border border-white/10 bg-gradient-to-b from-white/10 to-white/5"
+    >
+      <!-- Queen -->
+      <button
+        (click)="choose('q')"
+        class="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 bg-gradient-to-b from-[#2a2f37] to-[#21252b] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_4px_12px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 py-2"
+        aria-label="Queen"
+        type="button"
+      >
+        <div class="text-2xl drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+          {{ color === "w" ? "♕" : "♛" }}
+        </div>
+        <div class="text-[11px] opacity-90 mt-1">Queen</div>
+      </button>
+
+      <!-- Rook -->
+      <button
+        (click)="choose('r')"
+        class="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 bg-gradient-to-b from-[#2a2f37] to-[#21252b] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_4px_12px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 py-2"
+        aria-label="Rook"
+        type="button"
+      >
+        <div class="text-2xl drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+          {{ color === "w" ? "♖" : "♜" }}
+        </div>
+        <div class="text-[11px] opacity-90 mt-1">Rook</div>
+      </button>
+
+      <!-- Bishop -->
+      <button
+        (click)="choose('b')"
+        class="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 bg-gradient-to-b from-[#2a2f37] to-[#21252b] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_4px_12px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 py-2"
+        aria-label="Bishop"
+        type="button"
+      >
+        <div class="text-2xl drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+          {{ color === "w" ? "♗" : "♝" }}
+        </div>
+        <div class="text-[11px] opacity-90 mt-1">Bishop</div>
+      </button>
+
+      <!-- Knight -->
+      <button
+        (click)="choose('n')"
+        class="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 bg-gradient-to-b from-[#2a2f37] to-[#21252b] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_4px_12px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 py-2"
+        aria-label="Knight"
+        type="button"
+      >
+        <div class="text-2xl drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+          {{ color === "w" ? "♘" : "♞" }}
+        </div>
+        <div class="text-[11px] opacity-90 mt-1">Knight</div>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      (click)="cancel.emit()"
+      class="mx-auto mt-3 block text-xs text-slate-300/80 hover:text-slate-100 px-3 py-1 rounded-md hover:bg-white/10 transition"
+    >
+      Cancel
+    </button>
+  </div>
+</div>

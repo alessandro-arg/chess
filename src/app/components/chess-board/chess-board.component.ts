@@ -6,6 +6,7 @@ import {
   HostListener,
   OnDestroy,
   OnInit,
+  signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, of, combineLatest } from 'rxjs';
@@ -21,11 +22,14 @@ import { GameRtdbService } from '../../game-rtdb.service';
 import { Chess } from 'chess.js';
 import { BotService, BotLevel } from '../../bot.service';
 import { GameEndComponent, GameEndData } from '../game-end/game-end.component';
+import { PromotionModalComponent } from '../promotion-modal/promotion-modal.component';
+
+type Promotion = 'q' | 'r' | 'b' | 'n';
 
 @Component({
   selector: 'app-chess-board',
   standalone: true,
-  imports: [CommonModule, GameEndComponent],
+  imports: [CommonModule, GameEndComponent, PromotionModalComponent],
   templateUrl: './chess-board.component.html',
   styleUrl: './chess-board.component.css',
 })
@@ -33,6 +37,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   selectedSquare: string | null = null;
   highlightedSquares: string[] = [];
   isGameMenuOpen = false;
+
+  promotionOpen = signal(false);
+  promotionColor = signal<'w' | 'b'>('w');
 
   participantsSub?: Subscription;
   heartbeat?: any;
@@ -542,7 +549,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     return out;
   }
 
-  handleSquareClick(row: number, col: number): void {
+  async handleSquareClick(row: number, col: number) {
     const squareId = `${col}-${row}`;
 
     if (this.selectedSquare) {
@@ -633,9 +640,25 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       this.highlightedSquares = [];
 
       if (this.gameId) {
-        this.rtdbGame
-          .tryMove(this.gameId, { from, to, promotion: 'q' })
-          .catch((err) => console.warn('illegal/failed move', err));
+        try {
+          const fen = this.liveGame?.fen;
+          if (this.isPromotionMove(from, to, fen)) {
+            const color = new Chess(fen).turn(); // 'w' | 'b'
+            this.promotionColor.set(color);
+            const choice = await this.askPromotionPiece(color);
+            if (!choice) return; // cancelled
+
+            await this.rtdbGame.tryMove(this.gameId, {
+              from,
+              to,
+              promotion: choice,
+            });
+          } else {
+            await this.rtdbGame.tryMove(this.gameId, { from, to });
+          }
+        } catch (err) {
+          console.warn('illegal/failed move', err);
+        }
       }
       return;
     }
@@ -644,6 +667,44 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     if (this.board[row][col]) {
       this.selectSquareAndShowMoves(row, col);
     }
+  }
+
+  _resolvePromotion: (p: Promotion) => void = () => {};
+  _cancelPromotion: () => void = () => {};
+
+  // Open the modal and resolve the user's choice (or null if cancelled)
+  private askPromotionPiece(color: 'w' | 'b'): Promise<Promotion | null> {
+    this.promotionColor.set(color);
+    this.promotionOpen.set(true);
+
+    return new Promise<Promotion | null>((resolve) => {
+      const done = (val: Promotion | null) => {
+        this.promotionOpen.set(false);
+        // reset handlers
+        this._resolvePromotion = () => {};
+        this._cancelPromotion = () => {};
+        resolve(val);
+      };
+
+      this._resolvePromotion = (p: Promotion) => done(p);
+      this._cancelPromotion = () => done(null);
+    });
+  }
+
+  // True if a move from->to is a pawn promotion for the side moving
+  private isPromotionMove(
+    fromAlg: string,
+    toAlg: string,
+    fen: string
+  ): boolean {
+    const c = new Chess(fen);
+    const piece = c.get(fromAlg as any);
+    if (!piece || piece.type !== 'p') return false;
+    const destRank = toAlg[1]; // '1'..'8'
+    return (
+      (piece.color === 'w' && destRank === '8') ||
+      (piece.color === 'b' && destRank === '1')
+    );
   }
 
   getSquareClasses(row: number, col: number): string {
@@ -867,7 +928,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.finishDragAt(ev.clientX, ev.clientY);
   }
 
-  private finishDragAt(clientX: number, clientY: number) {
+  private async finishDragAt(clientX: number, clientY: number) {
     if (!this.dragging) return;
     this.dragArmed = false;
 
@@ -921,35 +982,43 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
           opt.kingFrom === toAlg
       );
 
-      const p = matchByRookFirst
-        ? this.rtdbGame.tryMove(this.gameId, {
-            from: matchByRookFirst.kingFrom as any,
-            to: matchByRookFirst.kingTo as any,
-          })
-        : matchByKingToRook
-        ? this.rtdbGame.tryMove(this.gameId, {
-            from: matchByKingToRook.kingFrom as any,
-            to: matchByKingToRook.kingTo as any,
-          })
-        : matchByRookToKing
-        ? this.rtdbGame.tryMove(this.gameId, {
-            from: matchByRookToKing.kingFrom as any,
-            to: matchByRookToKing.kingTo as any,
-          })
-        : this.rtdbGame.tryMove(this.gameId, {
+      if (matchByRookFirst) {
+        await this.rtdbGame.tryMove(this.gameId, {
+          from: matchByRookFirst.kingFrom as any,
+          to: matchByRookFirst.kingTo as any,
+        });
+      } else if (matchByKingToRook) {
+        await this.rtdbGame.tryMove(this.gameId, {
+          from: matchByKingToRook.kingFrom as any,
+          to: matchByKingToRook.kingTo as any,
+        });
+      } else if (matchByRookToKing) {
+        await this.rtdbGame.tryMove(this.gameId, {
+          from: matchByRookToKing.kingFrom as any,
+          to: matchByRookToKing.kingTo as any,
+        });
+      } else {
+        const fen = this.liveGame?.fen;
+        if (this.isPromotionMove(fromAlg, toAlg, fen)) {
+          const color = new Chess(fen).turn(); // 'w' | 'b'
+          this.promotionColor.set(color);
+          const choice = await this.askPromotionPiece(color);
+          if (!choice) return; // cancelled
+          await this.rtdbGame.tryMove(this.gameId, {
             from: fromAlg,
             to: toAlg,
-            promotion: 'q',
+            promotion: choice,
           });
-
-      // IMPORTANT: on resolve or reject, clear selection + previews
-      Promise.resolve(p).finally(() => {
-        this.dragFrom = null;
-        this.selectedSquare = null;
-        this.highlightedSquares = [];
-      });
-    } catch {
-      // on any local error, also clear
+        } else {
+          await this.rtdbGame.tryMove(this.gameId, {
+            from: fromAlg,
+            to: toAlg,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('illegal/failed move', e);
+    } finally {
       this.dragFrom = null;
       this.selectedSquare = null;
       this.highlightedSquares = [];

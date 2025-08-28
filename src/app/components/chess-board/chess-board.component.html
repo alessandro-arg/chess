@@ -740,6 +740,13 @@
   </div>
 </div>
 
+<app-promotion-modal
+  [open]="promotionOpen()"
+  [color]="promotionColor()"
+  (select)="_resolvePromotion($event)"
+  (cancel)="_cancelPromotion()"
+></app-promotion-modal>
+
 <app-game-end
   *ngIf="gameEndData"
   [gameData]="gameEndData"

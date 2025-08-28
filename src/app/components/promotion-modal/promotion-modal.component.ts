@@ -2,9 +2,9 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   EventEmitter,
+  HostListener,
   Input,
   Output,
-  HostListener,
 } from '@angular/core';
 
 export type Promotion = 'q' | 'r' | 'b' | 'n';

@@ -6,6 +6,7 @@ import {
   setDoc,
   serverTimestamp,
   collection,
+  collectionGroup,
   limit,
   onSnapshot,
   orderBy,
@@ -36,6 +37,7 @@ export interface GameDoc {
   status: 'waiting' | 'active' | 'finished';
   createdAt: any;
   updatedAt: any;
+  finishedAt: any;
 
   mode?: 'pvp' | 'bot';
   bot?: { difficulty: 'easy' | 'medium' | 'hard' };
@@ -352,5 +354,43 @@ export class NotificationService {
       finishedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+  }
+
+  /**
+   * Stream games that include the given uid (players.both array-contains)
+   * Sorted latest → oldest by updatedAt (fallback if you prefer finishedAt).
+   * Firestore may prompt you for a composite index; follow the link it gives.
+   */
+  gamesForUser$(uid: string, max = 10): Observable<GameDoc[]> {
+    const colRef = collection(this.firestore, 'games');
+    const qy = query(
+      colRef,
+      where('players.both', 'array-contains', uid),
+      orderBy('updatedAt', 'desc'),
+      limit(max)
+    );
+    return new Observable<GameDoc[]>((sub) => {
+      const unsub = onSnapshot(
+        qy,
+        (snap) => {
+          const rows = snap.docs.map(
+            (d) => ({ id: d.id, ...(d.data() as any) } as GameDoc)
+          );
+          sub.next(rows);
+        },
+        (err) => sub.error(err)
+      );
+      return () => unsub();
+    });
+  }
+
+  /**
+   * Convenience stream for the *current* signed-in user.
+   * If not signed in yet, emits [].
+   */
+  gamesForCurrentUser$(max = 10): Observable<GameDoc[]> {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return of([]);
+    return this.gamesForUser$(uid, max);
   }
 }

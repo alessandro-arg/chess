@@ -13,17 +13,29 @@ import {
   switchMap,
 } from 'rxjs';
 import { FriendService, Friendship } from '../../friend.service';
-import { GameInvite, NotificationService } from '../../notification.service';
+import {
+  GameInvite,
+  NotificationService,
+  GameDoc,
+} from '../../notification.service';
 import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
 import { GameRtdbService } from '../../game-rtdb.service';
 import { LatencyService } from '../../latency.service';
 import { LiveClockComponent } from '../live-clock/live-clock.component';
+import { GamesModalComponent } from '../games-modal/games-modal.component';
+
+type Outcome = 'W' | 'L' | 'D';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FriendsModalComponent, LiveClockComponent],
+  imports: [
+    CommonModule,
+    FriendsModalComponent,
+    LiveClockComponent,
+    GamesModalComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -57,6 +69,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   latency$ = this.latencySvc.latency$;
   connected$ = this.latencySvc.connected$;
   serverLabel = this.latencySvc.serverLabel;
+
+  recentGames$?: Observable<GameDoc[]>;
+  showGamesModal = false;
 
   constructor(
     private readonly auth: AuthService,
@@ -178,6 +193,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
         shareReplay({ bufferSize: 1, refCount: true })
       );
     });
+
+    this.recentGames$ = this.auth.user$.pipe(
+      switchMap((user) =>
+        user?.uid ? this.notifier.gamesForUser$(user.uid, 3) : of([])
+      ),
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
   }
 
   ngOnInit(): void {
@@ -340,5 +362,58 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  opponentUid(g: GameDoc, myUid: string): string {
+    const w = g.players?.white || '';
+    const b = g.players?.black || '';
+    return w === myUid ? b : w;
+  }
+
+  outcomeForUser(g: GameDoc, myUid: string): Outcome {
+    const asWhite = g.players?.white === myUid;
+    switch (g.result) {
+      case '1-0':
+        return asWhite ? 'W' : 'L';
+      case '0-1':
+        return asWhite ? 'L' : 'W';
+      case '1/2-1/2':
+        return 'D';
+      default:
+        return 'D';
+    }
+  }
+
+  outcomeClasses(o: Outcome): { box: string; text: string } {
+    if (o === 'W') return { box: 'bg-green-500/20', text: 'text-green-400' };
+    if (o === 'L') return { box: 'bg-red-500/20', text: 'text-red-400' };
+    return { box: 'bg-gray-500/20', text: 'text-gray-400' };
+  }
+
+  timeAgo(d?: any): string {
+    const dt = d?.toDate ? (d.toDate() as Date) : d instanceof Date ? d : null;
+    if (!dt) return '';
+    const diff = Date.now() - dt.getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const ddd = Math.floor(h / 24);
+    if (ddd < 7) return `${ddd}d ago`;
+    const w = Math.floor(ddd / 7);
+    if (w < 5) return `${w}w ago`;
+    const mo = Math.floor(ddd / 30);
+    if (mo < 12) return `${mo}mo ago`;
+    const y = Math.floor(ddd / 365);
+    return `${y}y ago`;
+  }
+
+  openAllGamesModal() {
+    this.showGamesModal = true;
+  }
+  closeAllGamesModal() {
+    this.showGamesModal = false;
   }
 }

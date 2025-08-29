@@ -1,0 +1,97 @@
+<!-- Backdrop -->
+<div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+  <div
+    class="absolute inset-0 bg-black/60"
+    (click)="close.emit()"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Panel -->
+  <div
+    class="relative w-full sm:w-[560px] max-w-full sm:max-w-[560px] bg-steel-secondary/60 backdrop-blur border border-steel-primary/20 rounded-2xl shadow-xl mx-2 sm:mx-0"
+    role="dialog"
+    aria-modal="true"
+  >
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between p-4 border-b border-steel-primary/20"
+    >
+      <h3 class="text-white font-semibold text-base sm:text-lg">
+        All Recent Games
+      </h3>
+      <button
+        type="button"
+        class="p-2 rounded-lg text-steel-accent hover:text-steel-primary hover:bg-steel-bg/30 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        aria-label="Close"
+        (click)="close.emit()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Body: fits ~5 items before scrolling -->
+    <div class="p-3">
+      <div class="max-h-96 overflow-y-auto space-y-3">
+        <ng-container *ngIf="games$ | async as games; else loading">
+          <div
+            *ngIf="games.length === 0"
+            class="text-sm text-gray-400 px-1 py-2"
+          >
+            No games played yet.
+          </div>
+
+          <article
+            *ngFor="let g of games"
+            class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-lg flex items-center justify-center"
+                [ngClass]="outcomeBox(outcomeForUser(g)).box"
+              >
+                <span
+                  class="text-sm font-bold"
+                  [ngClass]="outcomeBox(outcomeForUser(g)).text"
+                >
+                  {{ outcomeForUser(g) }}
+                </span>
+              </div>
+
+              <div>
+                <p class="text-sm font-medium text-white">
+                  vs
+                  <ng-container *ngIf="profile$(opponentUid(g)) | async as opp">
+                    {{ opp?.displayName || opponentUid(g) }}
+                  </ng-container>
+                </p>
+                <div class="flex items-center gap-2 text-xs text-gray-400">
+                  <span>{{ g.status || "—" }}</span>
+                  <span>•</span>
+                  <span>{{
+                    timeAgo(g.finishedAt || g.updatedAt || g.createdAt)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+              aria-label="View game analysis"
+              (click)="goAnalysis(g.id)"
+            >
+              <img
+                src="../../../assets/analysis.png"
+                alt="Analysis icon"
+                class="w-5 h-5"
+              />
+            </button>
+          </article>
+        </ng-container>
+        <ng-template #loading>
+          <div class="text-sm text-gray-400 px-1 py-2">Loading…</div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

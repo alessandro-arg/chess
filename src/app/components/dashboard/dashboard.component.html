@@ -447,124 +447,95 @@
           >
             Recent Games
           </h2>
+
           <div
             class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4"
           >
-            <div class="space-y-3">
-              <!-- Game Result Item -->
-              <article
-                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
-              >
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center"
+            <ng-container *ngIf="recentGames$ | async as games">
+              <!-- Empty state -->
+              <div *ngIf="games.length === 0" class="text-sm text-gray-400">
+                No games played yet.
+              </div>
+
+              <!-- Items (max 3 from the stream) -->
+              <div *ngIf="games.length > 0" class="space-y-3">
+                <article
+                  *ngFor="let g of games"
+                  class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <ng-container *ngIf="uid as myUid">
+                      <div
+                        class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        [ngClass]="outcomeClasses(outcomeForUser(g, myUid)).box"
+                      >
+                        <span
+                          class="text-sm font-bold"
+                          [ngClass]="
+                            outcomeClasses(outcomeForUser(g, myUid)).text
+                          "
+                        >
+                          {{ outcomeForUser(g, myUid) }}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p class="text-sm font-medium text-white">
+                          vs
+                          <ng-container
+                            *ngIf="
+                              profile$(opponentUid(g, myUid)) | async as opp
+                            "
+                          >
+                            {{ opp?.displayName || opponentUid(g, myUid) }}
+                          </ng-container>
+                        </p>
+                        <div
+                          class="flex items-center gap-2 text-xs text-gray-400"
+                        >
+                          <span>{{ g.status || "—" }}</span>
+                          <span>•</span>
+                          <span>{{
+                            timeAgo(g.finishedAt || g.updatedAt || g.createdAt)
+                          }}</span>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
+                    aria-label="View game analysis"
                   >
-                    <span class="text-green-400 text-sm font-bold">W</span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-white">
-                      vs ChessMaster_Pro
-                    </p>
-                    <div class="flex items-center gap-2 text-xs text-gray-400">
-                      <span>Rapid • 15+10</span>
-                      <span>•</span>
-                      <span>2h ago</span>
-                    </div>
-                  </div>
-                </div>
+                    <img
+                      src="../../../assets/analysis.png"
+                      alt="Analysis icon"
+                      class="w-5 h-5"
+                    />
+                  </button>
+                </article>
+              </div>
+
+              <!-- View All Games -->
+              <div class="mt-4 pt-3 border-t border-steel-primary/20">
                 <button
                   type="button"
-                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                  aria-label="View game analysis"
+                  class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  (click)="openAllGamesModal()"
                 >
-                  <img
-                    src="../../../assets/analysis.png"
-                    alt="Analysis icon"
-                    class="w-5 h-5"
-                  />
+                  View All Games
                 </button>
-              </article>
-
-              <!-- Another Game -->
-              <article
-                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
-              >
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center"
-                  >
-                    <span class="text-red-400 text-sm font-bold">L</span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-white">
-                      vs QueenGambit_22
-                    </p>
-                    <div class="flex items-center gap-2 text-xs text-gray-400">
-                      <span>Blitz • 5+3</span>
-                      <span>•</span>
-                      <span>4h ago</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                  aria-label="View game analysis"
-                >
-                  <img
-                    src="../../../assets/analysis.png"
-                    alt="Analysis icon"
-                    class="w-5 h-5"
-                  />
-                </button>
-              </article>
-
-              <!-- Draw Game -->
-              <article
-                class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
-              >
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-8 h-8 bg-gray-500/20 rounded-lg flex items-center justify-center"
-                  >
-                    <span class="text-gray-400 text-sm font-bold">D</span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-white">
-                      vs TacticalBot_v2
-                    </p>
-                    <div class="flex items-center gap-2 text-xs text-gray-400">
-                      <span>Classical • 30+0</span>
-                      <span>•</span>
-                      <span>1d ago</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-                  aria-label="View game analysis"
-                >
-                  <img
-                    src="../../../assets/analysis.png"
-                    alt="Analysis icon"
-                    class="w-5 h-5"
-                  />
-                </button>
-              </article>
-            </div>
-
-            <!-- View All Games -->
-            <div class="mt-4 pt-3 border-t border-steel-primary/20">
-              <button
-                type="button"
-                class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
-              >
-                View All Games
-              </button>
-            </div>
+              </div>
+            </ng-container>
           </div>
         </section>
+
+        <app-games-modal
+          *ngIf="showGamesModal && uid"
+          [uid]="uid!"
+          (close)="closeAllGamesModal()"
+        ></app-games-modal>
 
         <!-- Active Games Section (Mobile Only, Hidden on Desktop) -->
         <section

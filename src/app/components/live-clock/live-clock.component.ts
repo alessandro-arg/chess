@@ -1,5 +1,7 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-live-clock',
@@ -11,9 +13,12 @@ import { CommonModule } from '@angular/common';
 export class LiveClockComponent {
   now = signal(new Date());
   private destroyRef = inject(DestroyRef);
+  private platformId = inject(PLATFORM_ID);
 
   constructor() {
-    const id = window.setInterval(() => this.now.set(new Date()), 30_000);
-    this.destroyRef.onDestroy(() => clearInterval(id));
+    if (isPlatformBrowser(this.platformId)) {
+      const id = window.setInterval(() => this.now.set(new Date()), 30_000);
+      this.destroyRef.onDestroy(() => clearInterval(id));
+    }
   }
 }

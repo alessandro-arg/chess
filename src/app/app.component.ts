@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ToastMessageComponent } from './components/toast-message/toast-message.component';
+import { shouldShowA2HS } from './a2hs.util';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,7 @@ import { ToastMessageComponent } from './components/toast-message/toast-message.
 export class AppComponent {
   title = 'Chess²';
   isAuthenticated$: Observable<boolean> = this.auth.isAuthenticated$;
+  shouldShowA2HS = shouldShowA2HS;
 
   constructor(
     private readonly auth: AuthService,

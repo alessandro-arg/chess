@@ -1,4 +1,4 @@
-<div class="h-screen bg-steel-bg chess-piece-bg overflow-x-hidden relative">
+<div class="h-dvh bg-steel-bg chess-piece-bg overflow-x-hidden relative">
   <!-- Floating Orbs -->
   <div class="floating-orb floating-orb-1"></div>
   <div class="floating-orb floating-orb-2"></div>
@@ -6,6 +6,16 @@
 
   <main>
     <router-outlet></router-outlet>
+
+    <div
+      *ngIf="shouldShowA2HS()"
+      class="fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] left-4 right-4 z-50 rounded-2xl bg-black/80 text-white p-3 backdrop-blur"
+    >
+      <div class="text-sm">
+        Install Chess²: tap <span class="inline-block px-1">Share</span> →
+        <strong>Add to Home Screen</strong>.
+      </div>
+    </div>
   </main>
   <app-toast-message></app-toast-message>
 </div>

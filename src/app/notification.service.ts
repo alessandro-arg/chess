@@ -16,6 +16,7 @@ import {
   deleteDoc,
   getDoc,
   addDoc,
+  collectionData,
 } from '@angular/fire/firestore';
 import { Auth } from '@angular/fire/auth';
 import { map, Observable, of } from 'rxjs';
@@ -366,22 +367,14 @@ export class NotificationService {
     const qy = query(
       colRef,
       where('players.both', 'array-contains', uid),
+      // Use finishedAt if you prefer; see note below
       orderBy('updatedAt', 'desc'),
       limit(max)
     );
-    return new Observable<GameDoc[]>((sub) => {
-      const unsub = onSnapshot(
-        qy,
-        (snap) => {
-          const rows = snap.docs.map(
-            (d) => ({ id: d.id, ...(d.data() as any) } as GameDoc)
-          );
-          sub.next(rows);
-        },
-        (err) => sub.error(err)
-      );
-      return () => unsub();
-    });
+
+    return collectionData(qy, { idField: 'id' }).pipe(
+      map((rows) => rows as GameDoc[])
+    );
   }
 
   /**

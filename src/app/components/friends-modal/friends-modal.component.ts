@@ -7,8 +7,9 @@ import {
   OnInit,
   OnChanges,
   SimpleChanges,
+  OnDestroy,
 } from '@angular/core';
-import { firstValueFrom, Observable, of } from 'rxjs';
+import { Subscription, firstValueFrom, Observable, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FriendService, Friendship } from '../../friend.service';
 import { UserService, UserProfile } from '../../user.service';
@@ -23,7 +24,7 @@ import { map, shareReplay, take } from 'rxjs/operators';
   templateUrl: './friends-modal.component.html',
   styleUrl: './friends-modal.component.css',
 })
-export class FriendsModalComponent implements OnInit, OnChanges {
+export class FriendsModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() initialTab: 'search' | 'requests' | 'friends' = 'search';
   @Output() close = new EventEmitter<void>();
@@ -31,6 +32,7 @@ export class FriendsModalComponent implements OnInit, OnChanges {
   activeTab = signal<'search' | 'requests' | 'friends'>('search');
   query = signal('');
   searching = signal(false);
+  searched = signal(false);
   results = signal<
     Array<
       UserProfile & {
@@ -43,6 +45,7 @@ export class FriendsModalComponent implements OnInit, OnChanges {
   incoming$: Observable<Friendship[]> = of([]);
   outgoing$: Observable<Friendship[]> = of([]);
 
+  private statusSubs = new Map<string, Subscription>();
   private profileCache = new Map<string, Observable<UserProfile | null>>();
 
   constructor(
@@ -63,12 +66,76 @@ export class FriendsModalComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['isOpen'] && this.isOpen) {
-      this.activeTab.set(this.initialTab || 'search');
+    if (changes['isOpen']) {
+      if (this.isOpen) {
+        this.activeTab.set(this.initialTab || 'search');
+      } else {
+        this.clearStatusSubs();
+      }
     }
     if (changes['initialTab'] && this.isOpen) {
       this.activeTab.set(this.initialTab);
     }
+  }
+
+  ngOnDestroy() {
+    this.clearStatusSubs();
+  }
+
+  onQueryChange(v: string) {
+    this.query.set(v);
+    this.searched.set(false);
+  }
+
+  private watchStatuses(
+    users: Array<
+      UserProfile & {
+        status: 'none' | 'friends' | 'pending-in' | 'pending-out';
+      }
+    >
+  ) {
+    const currentUids = new Set(users.map((u) => u.uid));
+
+    // unsubscribe those not in current results
+    for (const [uid, sub] of this.statusSubs) {
+      if (!currentUids.has(uid)) {
+        sub.unsubscribe();
+        this.statusSubs.delete(uid);
+      }
+    }
+
+    const me = this.meUid();
+    for (const u of users) {
+      if (this.statusSubs.has(u.uid)) continue;
+
+      const sub = this.friend.friendship$(u.uid).subscribe((fs) => {
+        const status: 'none' | 'friends' | 'pending-in' | 'pending-out' = !fs
+          ? 'none'
+          : fs.status === 'accepted'
+          ? 'friends'
+          : fs.status === 'pending'
+          ? fs.requestedBy === me
+            ? 'pending-out'
+            : 'pending-in'
+          : 'none';
+
+        // update just this user in the results signal
+        this.results.update((list) => {
+          const idx = list.findIndex((x) => x.uid === u.uid);
+          if (idx === -1) return list;
+          const next = [...list];
+          next[idx] = { ...next[idx], status };
+          return next;
+        });
+      });
+
+      this.statusSubs.set(u.uid, sub);
+    }
+  }
+
+  private clearStatusSubs() {
+    for (const [, sub] of this.statusSubs) sub.unsubscribe();
+    this.statusSubs.clear();
   }
 
   profile$(uid: string): Observable<UserProfile | null> {
@@ -116,9 +183,12 @@ export class FriendsModalComponent implements OnInit, OnChanges {
     const term = this.query().trim().toLowerCase();
     if (term.length < 3) {
       this.results.set([]);
+      this.searched.set(false);
+      this.clearStatusSubs();
       return;
     }
 
+    this.searched.set(true);
     this.searching.set(true);
     try {
       const raw = await this.friend.searchUsers(term);
@@ -126,7 +196,9 @@ export class FriendsModalComponent implements OnInit, OnChanges {
 
       const decorated = await Promise.all(
         raw.slice(0, 3).map(async (u) => {
-          const fs = await firstValueFrom(this.friend.friendship$(u.uid));
+          const fs = await firstValueFrom(
+            this.friend.friendship$(u.uid).pipe(take(1))
+          );
           let status: 'none' | 'friends' | 'pending-in' | 'pending-out' =
             'none';
           if (fs) {
@@ -139,6 +211,7 @@ export class FriendsModalComponent implements OnInit, OnChanges {
       );
 
       this.results.set(decorated);
+      this.watchStatuses(decorated);
     } finally {
       this.searching.set(false);
     }

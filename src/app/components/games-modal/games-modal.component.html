@@ -29,47 +29,43 @@
       </button>
     </div>
 
-    <!-- Body: fits ~5 items before scrolling -->
+    <!-- Body -->
     <div class="p-3">
-      <div class="max-h-96 overflow-y-auto space-y-3">
-        <ng-container *ngIf="games$ | async as games; else loading">
+      <ng-container *ngIf="vm$ | async as vm; else loading">
+        <div *ngIf="vm.error" class="text-sm text-red-400 px-1 py-2">
+          {{ vm.error }}
+        </div>
+
+        <div class="max-h-96 overflow-y-auto space-y-3">
           <div
-            *ngIf="games.length === 0"
+            *ngIf="!vm.error && vm.items.length === 0"
             class="text-sm text-gray-400 px-1 py-2"
           >
             No games played yet.
           </div>
 
           <article
-            *ngFor="let g of games"
+            *ngFor="let it of vm.items; trackBy: trackById"
             class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
           >
             <div class="flex items-center gap-3">
               <div
                 class="w-8 h-8 rounded-lg flex items-center justify-center"
-                [ngClass]="outcomeBox(outcomeForUser(g)).box"
+                [ngClass]="it.boxClass"
               >
-                <span
-                  class="text-sm font-bold"
-                  [ngClass]="outcomeBox(outcomeForUser(g)).text"
-                >
-                  {{ outcomeForUser(g) }}
-                </span>
+                <span class="text-sm font-bold" [ngClass]="it.textClass">{{
+                  it.outcome
+                }}</span>
               </div>
 
               <div>
                 <p class="text-sm font-medium text-white">
-                  vs
-                  <ng-container *ngIf="profile$(opponentUid(g)) | async as opp">
-                    {{ opp?.displayName || opponentUid(g) }}
-                  </ng-container>
+                  vs {{ it.opponentLabel }}
                 </p>
                 <div class="flex items-center gap-2 text-xs text-gray-400">
-                  <span>{{ g.status || "—" }}</span>
+                  <span>{{ it.statusLabel }}</span>
                   <span>•</span>
-                  <span>{{
-                    timeAgo(g.finishedAt || g.updatedAt || g.createdAt)
-                  }}</span>
+                  <span>{{ it.whenLabel }}</span>
                 </div>
               </div>
             </div>
@@ -78,7 +74,7 @@
               type="button"
               class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
               aria-label="View game analysis"
-              (click)="goAnalysis(g.id)"
+              (click)="goAnalysis(it.id)"
             >
               <img
                 src="../../../assets/analysis.png"
@@ -87,11 +83,12 @@
               />
             </button>
           </article>
-        </ng-container>
-        <ng-template #loading>
-          <div class="text-sm text-gray-400 px-1 py-2">Loading…</div>
-        </ng-template>
-      </div>
+        </div>
+      </ng-container>
+
+      <ng-template #loading>
+        <div class="text-sm text-gray-400 px-1 py-2">Loading…</div>
+      </ng-template>
     </div>
   </div>
 </div>

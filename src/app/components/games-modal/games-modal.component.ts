@@ -1,9 +1,31 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnInit,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, of, shareReplay, switchMap } from 'rxjs';
+import { Observable, of, combineLatest } from 'rxjs';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { NotificationService, GameDoc } from '../../notification.service';
-import { UserService, UserProfile } from '../../user.service';
+import { UserService } from '../../user.service';
+
+type Outcome = 'W' | 'L' | 'D';
+
+type VmItem = {
+  id: string;
+  outcome: Outcome;
+  boxClass: string;
+  textClass: string;
+  opponentLabel: string; // already resolved (BOT/Unknown/name/uid)
+  statusLabel: string;
+  whenLabel: string;
+};
+
+type Vm = { items: VmItem[]; error: string | null };
 
 @Component({
   selector: 'app-games-modal',
@@ -15,7 +37,9 @@ export class GamesModalComponent implements OnInit {
   @Input({ required: true }) uid!: string;
   @Output() close = new EventEmitter<void>();
 
-  games$?: Observable<GameDoc[]>;
+  vm$!: Observable<Vm>;
+
+  trackById = (_: number, it: VmItem) => it.id;
 
   constructor(
     private readonly notifier: NotificationService,
@@ -24,30 +48,90 @@ export class GamesModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // fetch "all" (or many) — the UI will only scroll after ~5 items
-    this.games$ = of(this.uid).pipe(
-      switchMap((uid) => (uid ? this.notifier.gamesForUser$(uid, 50) : of([]))),
+    this.vm$ = of(this.uid).pipe(
+      switchMap((uid) => {
+        if (!uid) return of<Vm>({ items: [], error: null });
+
+        // 1) Load the games for current user
+        return this.notifier.gamesForUser$(uid, 50).pipe(
+          // 2) For each game, resolve opponent label (never in template)
+          switchMap((games) => {
+            if (!games?.length) return of<Vm>({ items: [], error: null });
+
+            const itemStreams = games.map((g) => {
+              const w = g?.players?.white ?? null;
+              const b = g?.players?.black ?? null;
+              const myIsWhite = w === uid;
+              const myIsBlack = b === uid;
+
+              // Defensive: should always be true because of query, but guard anyway
+              if (!myIsWhite && !myIsBlack) {
+                return of<VmItem>(this.makeItem(uid, g, 'Unknown'));
+              }
+
+              const ouid = myIsWhite ? b : w;
+
+              // Resolve opponent label without calling Firestore for invalid/BOT/empty
+              if (!ouid || ouid === 'BOT' || ouid === '') {
+                const label = ouid === 'BOT' ? 'BOT' : 'Unknown';
+                return of<VmItem>(this.makeItem(uid, g, label));
+              }
+
+              // Safe Firestore lookup for opponent profile
+              return this.userService.userProfile$(ouid).pipe(
+                map((opp) => this.makeItem(uid, g, opp?.displayName || ouid)),
+                catchError(() => of(this.makeItem(uid, g, ouid)))
+              );
+            });
+
+            return combineLatest(itemStreams).pipe(
+              map((items) => ({ items, error: null as string | null }))
+            );
+          }),
+          catchError((err) => {
+            const msg =
+              err?.code === 'failed-precondition'
+                ? 'Index not ready. Open Firestore console to create the suggested index.'
+                : err?.code === 'permission-denied'
+                ? 'You don’t have permission to read games. Check Firestore security rules.'
+                : 'Could not load games.';
+            return of<Vm>({ items: [], error: msg });
+          })
+        );
+      }),
       shareReplay({ bufferSize: 1, refCount: true })
     );
   }
 
-  opponentUid(g: GameDoc): string {
-    const w = g.players?.white || '';
-    const b = g.players?.black || '';
-    return w === this.uid ? b : w;
+  // --- pure helpers used ONLY inside the stream (not in the template) ---
+
+  private makeItem(myUid: string, g: GameDoc, opponentLabel: string): VmItem {
+    const outcome = this.outcomeForUser(myUid, g);
+    const classes = this.outcomeClasses(outcome);
+    const when = this.timeAgo(g?.finishedAt || g?.updatedAt || g?.createdAt);
+
+    return {
+      id: g.id,
+      outcome,
+      boxClass: classes.box,
+      textClass: classes.text,
+      opponentLabel,
+      statusLabel: g?.status || '—',
+      whenLabel: when,
+    };
   }
 
-  profile$(uid: string): Observable<UserProfile | null> {
-    return this.userService.userProfile$(uid);
-  }
+  private outcomeForUser(myUid: string, g: GameDoc): Outcome {
+    const w = g?.players?.white ?? null;
+    const b = g?.players?.black ?? null;
+    const myIsWhite = w === myUid;
+    const myIsBlack = b === myUid;
 
-  outcomeForUser(g: GameDoc): 'W' | 'L' | 'D' {
-    const asWhite = g.players?.white === this.uid;
-    switch (g.result) {
+    switch (g?.result) {
       case '1-0':
-        return asWhite ? 'W' : 'L';
+        return myIsWhite ? 'W' : 'L';
       case '0-1':
-        return asWhite ? 'L' : 'W';
+        return myIsBlack ? 'W' : 'L';
       case '1/2-1/2':
         return 'D';
       default:
@@ -55,7 +139,7 @@ export class GamesModalComponent implements OnInit {
     }
   }
 
-  outcomeBox(o: 'W' | 'L' | 'D') {
+  private outcomeClasses(o: Outcome) {
     return {
       box:
         o === 'W'
@@ -72,7 +156,7 @@ export class GamesModalComponent implements OnInit {
     };
   }
 
-  timeAgo(d?: any): string {
+  private timeAgo(d?: any): string {
     const dt = d?.toDate ? (d.toDate() as Date) : d instanceof Date ? d : null;
     if (!dt) return '';
     const diff = Date.now() - dt.getTime();
@@ -96,6 +180,11 @@ export class GamesModalComponent implements OnInit {
     this.router.navigate(['/', this.uid, 'analysis'], {
       queryParams: { game: gameId },
     });
+    this.close.emit();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEsc() {
     this.close.emit();
   }
 }

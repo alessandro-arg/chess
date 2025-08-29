@@ -5,6 +5,7 @@ import { AuthService } from '../../auth.service';
 import { FriendsModalComponent } from '../friends-modal/friends-modal.component';
 import {
   BehaviorSubject,
+  catchError,
   combineLatest,
   map,
   Observable,
@@ -198,6 +199,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       switchMap((user) =>
         user?.uid ? this.notifier.gamesForUser$(user.uid, 3) : of([])
       ),
+      catchError((err) => {
+        console.error('recentGames$', err);
+        return of([]);
+      }),
       shareReplay({ bufferSize: 1, refCount: true })
     );
   }

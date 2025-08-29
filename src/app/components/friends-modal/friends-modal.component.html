@@ -69,7 +69,7 @@
         <div class="flex items-center gap-2">
           <input
             [ngModel]="query()"
-            (ngModelChange)="query.set($event)"
+            (ngModelChange)="onQueryChange($event)"
             (keyup.enter)="runSearch()"
             placeholder="Search users by name or email"
             class="w-full rounded-xl bg-steel-bg/40 border border-steel-primary/20 text-white placeholder-gray-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-steel-accent"
@@ -83,7 +83,7 @@
         </div>
 
         <div
-          *ngIf="query().trim().length < 3 && !searching()"
+          *ngIf="!searched() && query().trim().length < 3 && !searching()"
           class="text-gray-400 text-sm"
         >
           Type at least 3 characters to search.
@@ -91,24 +91,21 @@
 
         <div *ngIf="searching()" class="text-gray-300 text-sm">Searching…</div>
 
+        <div
+          *ngIf="searched() && !searching() && results().length <= 0"
+          class="text-gray-400 text-sm"
+        >
+          No users found with this username.
+        </div>
+
         <div *ngIf="results().length" class="space-y-2">
-          <div
-            *ngIf="
-              !searching() &&
-              query().trim().length >= 3 &&
-              results().length === 0
-            "
-            class="text-gray-400 text-sm"
-          >
-            No users found with this username.
-          </div>
           <div
             *ngFor="let u of results()"
             class="flex items-center gap-3 p-2 rounded-xl hover:bg-steel-bg/30 border border-transparent hover:border-steel-primary/10"
           >
             <img
               [src]="u.photoURL || '../../../assets/user.png'"
-              class="w-9 h-9 rounded-lg"
+              class="w-9 h-9 rounded-lg object-cover object-center"
               alt="avatar"
             />
             <div class="flex-1 min-w-0">
@@ -175,7 +172,7 @@
                 <div class="flex items-center gap-3 min-w-0">
                   <img
                     [src]="p?.photoURL || '../../../assets/user.png'"
-                    class="w-9 h-9 rounded-lg"
+                    class="w-9 h-9 rounded-lg object-cover object-center"
                     alt="avatar"
                   />
                   <div class="min-w-0">
@@ -220,7 +217,7 @@
                 <div class="flex items-center gap-3 min-w-0">
                   <img
                     [src]="p?.photoURL || '../../../assets/user.png'"
-                    class="w-9 h-9 rounded-lg"
+                    class="w-9 h-9 rounded-lg object-cover object-center"
                     alt="avatar"
                   />
                   <div class="min-w-0">

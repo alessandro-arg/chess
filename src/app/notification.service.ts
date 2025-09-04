@@ -322,8 +322,8 @@ export class NotificationService {
     const ref = await addDoc(gamesCol, {
       players: {
         white: cfg.userUid,
-        black: 'BOT',
-        both: [cfg.userUid, 'BOT'],
+        black: 'Bot',
+        both: [cfg.userUid, 'Bot'],
       },
       mode: 'bot',
       bot: { difficulty: cfg.difficulty },
@@ -333,7 +333,7 @@ export class NotificationService {
       updatedAt: serverTimestamp(),
     });
 
-    await this.rtdbGame.create(ref.id, cfg.userUid, 'BOT', {
+    await this.rtdbGame.create(ref.id, cfg.userUid, 'Bot', {
       minutes: cfg.minutes,
       increment: cfg.increment,
     });

@@ -383,23 +383,16 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     // 7) RTDB live game stream
     this.rtdbSub?.unsubscribe();
     this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe(async (g) => {
-      if (this.isBotGame && g.status === 'active') {
-        const botColor: 'w' | 'b' = g.players?.blackUid === 'BOT' ? 'b' : 'w';
-        if (g.turn === botColor) {
-          if (!this.aiBusy && this.lastAIMoveAt !== g.lastMoveAt) {
-            this.aiBusy = true;
-            this.lastAIMoveAt = g.lastMoveAt;
-            try {
-              const mv = await this.bot.pickMoveAsync(g.fen, this.botLevel);
-              await this.rtdbGame.tryAIMove(this.gameId!, mv);
-            } catch (e) {
-              console.warn('AI move failed', e);
-            } finally {
-              this.aiBusy = false;
-            }
-          }
-        }
+      if (!g) return;
+
+      // --- 1) Update UI ASAP (no awaits here) ---
+      this.applyFen(g.fen);
+      if (this.myColor === 'black') {
+        this.board = this.board.map((row) => [...row].reverse()).reverse();
       }
+      this.updateClocksDisplay(g, this.serverOffset);
+      this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
+      this.liveGame = g;
 
       // record result once
       if (!this.postedResult && g.result && g.status !== 'active') {
@@ -410,20 +403,41 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
           flag: 'flag',
           resign: 'resign',
         };
-        const status = statusMap[g.status] || 'finished';
         this.notifier
           .updateGameResult(this.gameId!, {
-            status,
+            status: statusMap[g.status] || 'finished',
             result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
           })
           .catch(() => {});
       }
 
-      if (!g) return;
+      if (this.isBotGame && g.status === 'active') {
+        const botColor: 'w' | 'b' = g.players?.blackUid === 'BOT' ? 'b' : 'w';
+        if (
+          g.turn === botColor &&
+          !this.aiBusy &&
+          this.lastAIMoveAt !== g.lastMoveAt
+        ) {
+          this.aiBusy = true;
+          this.lastAIMoveAt = g.lastMoveAt;
+
+          // Defer so the UI paints first; no await in the subscribe callback
+          setTimeout(async () => {
+            try {
+              const mv = await this.bot.pickMoveAsync(g.fen, this.botLevel);
+              await this.rtdbGame.tryAIMove(this.gameId!, mv);
+            } catch (e) {
+              console.warn('AI move failed', e);
+            } finally {
+              this.aiBusy = false;
+            }
+          }, 0);
+          // If you use OnPush, you can also Optional: this.cdr.markForCheck();
+        }
+      }
 
       if (g.status !== 'active' && !this.navigatedOnGameEnd) {
         this.navigatedOnGameEnd = true;
-
         // figure out my outcome
         const myIsWhite = this.myColor === 'white';
         let outcome: 'win' | 'loss' | 'draw' = 'draw';

@@ -493,7 +493,7 @@
                         <div
                           class="flex items-center gap-2 text-xs text-gray-400"
                         >
-                          <span>{{ g.status || "—" }}</span>
+                          <span>{{ g.status || "-" }}</span>
                           <span>•</span>
                           <span>{{
                             timeAgo(g.finishedAt || g.updatedAt || g.createdAt)
@@ -536,34 +536,6 @@
           [uid]="uid!"
           (close)="closeAllGamesModal()"
         ></app-games-modal>
-
-        <!-- Active Games Section (Mobile Only, Hidden on Desktop) -->
-        <section
-          class="lg:hidden"
-          aria-labelledby="active-games-mobile-heading"
-        >
-          <h2
-            id="active-games-mobile-heading"
-            class="text-lg font-semibold text-white mb-3"
-          >
-            Active Games
-          </h2>
-          <div
-            class="bg-steel-secondary/50 backdrop-blur rounded-xl border border-steel-primary/20 p-4"
-          >
-            <div class="text-center py-6">
-              <img
-                src="../../../assets/login-icon.png"
-                alt="Logo icon"
-                class="w-5 h-5"
-              />
-              <p class="text-gray-400 text-sm">No active games</p>
-              <p class="text-gray-500 text-xs mt-1">
-                Start a new game to see it here
-              </p>
-            </div>
-          </div>
-        </section>
       </div>
 
       <!-- Right Column: Profile & Recent Activity -->
@@ -634,44 +606,6 @@
                 <div class="text-xs text-red-400">-7</div>
               </div>
             </div>
-
-            <!-- Rating Trend Placeholder -->
-            <!-- <div class="mb-4">
-              <div class="text-xs text-gray-400 mb-2">Recent Performance</div>
-              <div
-                class="h-8 bg-steel-bg/60 rounded-lg flex items-end justify-between px-2 py-1"
-              > -->
-            <!-- Simple CSS-only sparkline simulation -->
-            <!-- <div
-                  class="w-1 bg-steel-accent/60 rounded-full"
-                  style="height: 60%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent/60 rounded-full"
-                  style="height: 40%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent/60 rounded-full"
-                  style="height: 80%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent/60 rounded-full"
-                  style="height: 70%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent rounded-full"
-                  style="height: 90%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent rounded-full"
-                  style="height: 85%"
-                ></div>
-                <div
-                  class="w-1 bg-steel-accent rounded-full"
-                  style="height: 95%"
-                ></div>
-              </div>
-            </div> -->
 
             <!-- Profile Actions -->
             <div class="flex gap-2">

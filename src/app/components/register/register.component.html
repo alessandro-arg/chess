@@ -1,11 +1,5 @@
 <div class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md relative">
-    <!-- Status Indicator -->
-    <div class="absolute -top-12 right-4 flex items-center gap-2">
-      <div class="w-2 h-2 bg-steel-accent rounded-full"></div>
-      <span class="text-steel-accent text-xs font-medium">REGISTRATION</span>
-    </div>
-
     <!-- Main Register Container -->
     <div
       class="bg-steel-secondary/70 backdrop-blur-lg rounded-xl border-l-4 border-steel-primary shadow-2xl overflow-hidden"
@@ -30,12 +24,11 @@
             <div class="w-2 h-2 bg-steel-primary rounded-full"></div>
             <div class="w-1 h-1 bg-steel-accent rounded-full"></div>
           </div>
-          <p class="text-gray-400 text-sm">Begin your chess mastery journey</p>
         </div>
       </div>
 
       <!-- Register Form -->
-      <div class="px-6 py-6">
+      <div class="px-6 py-4">
         <form
           (ngSubmit)="register()"
           [formGroup]="form"
@@ -54,7 +47,7 @@
               id="username"
               type="text"
               formControlName="username"
-              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 focus:outline-none transition-all rounded-t-lg"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg"
               placeholder="Choose a unique username"
               autocomplete="username"
             />
@@ -83,7 +76,7 @@
               id="email"
               type="email"
               formControlName="email"
-              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 focus:outline-none transition-all rounded-t-lg"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg"
               placeholder="Enter your email address"
               autocomplete="email"
             />
@@ -112,7 +105,7 @@
               id="password"
               [type]="showPassword ? 'text' : 'password'"
               formControlName="password"
-              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 focus:outline-none transition-all rounded-t-lg pr-12"
+              class="w-full px-4 py-3 bg-steel-bg/60 border-0 border-b-2 border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 outline-none transition-all rounded-t-lg pr-12"
               [placeholder]="showPassword ? 'Strong password' : '••••••••'"
               autocomplete="new-password"
             />
@@ -147,26 +140,20 @@
           <!-- Terms & Privacy -->
           <div class="space-y-3 !mt-3">
             <label
-              class="flex items-start text-gray-300 hover:text-white cursor-pointer text-sm"
+              class="flex items-start text-gray-300 hover:text-white cursor-pointer text-sm w-fit"
               for="acceptTerms"
             >
               <input
                 id="acceptTerms"
                 type="checkbox"
                 formControlName="acceptTerms"
-                class="mr-3 mt-1 w-4 h-4 text-steel-primary bg-steel-bg/60 border-steel-primary/40 rounded cursor-pointer hover:bg-white"
+                class="mr-3 mt-[0.5px] w-4 h-4 text-steel-primary bg-steel-bg/60 border-steel-primary/40 rounded cursor-pointer hover:bg-white"
               />
               <span
                 >I agree to the
                 <a
                   href="#"
-                  class="text-steel-accent hover:text-steel-primary underline"
-                  >Terms of Service</a
-                >
-                and
-                <a
-                  href="#"
-                  class="text-steel-accent hover:text-steel-primary underline"
+                  class="text-steel-accent hover:text-steel-primary font-semibold"
                   >Privacy Policy</a
                 >
               </span>

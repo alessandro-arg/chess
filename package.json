@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:chess": "node dist/chess/server/server.mjs"
+    "serve:ssr:chess": "node dist/chess/server/server.mjs",
+    "postinstall": "node tools/copy-stockfish.js"
   },
   "private": true,
   "dependencies": {
@@ -27,6 +28,7 @@
     "express": "^4.18.2",
     "firebase": "^10.14.1",
     "rxjs": "~7.8.0",
+    "stockfish": "^17.1.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"
   },

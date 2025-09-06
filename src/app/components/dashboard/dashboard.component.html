@@ -439,30 +439,143 @@
               </div>
 
               <!-- Friend Invitation -->
-              <div class="mb-4">
+              <div class="mb-4" #friendSearchRoot (keydown)="onKeydown($event)">
                 <label
                   for="friend-search"
-                  class="block text-sm font-medium text-steel-accent mb-2"
-                  >Invite Friend</label
+                  class="block text-sm font-medium text-steel-accent mb-2 pointer-events-none"
+                  >Who do you want to destroy?</label
                 >
+
                 <div class="relative">
-                  <input
-                    type="text"
-                    id="friend-search"
-                    placeholder="Search by username..."
-                    class="w-full px-3 py-2 bg-steel-bg/60 border border-steel-primary/40 focus:border-steel-accent text-white placeholder-gray-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-steel-accent"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-steel-accent hover:text-steel-primary transition-colors focus:outline-none"
-                    aria-label="Search friends"
+                  <!-- Styled input wrapper to host the chip + input -->
+                  <div
+                    class="w-full bg-steel-bg/60 border border-steel-primary/40 focus-within:border-steel-accent text-white placeholder-gray-400 rounded-lg text-sm focus-within:outline-none focus-within:ring-2 focus-within:ring-steel-accent flex items-center gap-2"
+                    [ngClass]="selectedFriend ? 'px-0 py-0' : 'px-3 py-2'"
+                    (click)="!selectedFriend && openDropdown()"
                   >
-                    <img
-                      src="../../../assets/search.png"
-                      alt="Search icon"
-                      class="w-5 h-5"
-                    />
-                  </button>
+                    <!-- Selected chip -->
+                    <ng-container
+                      *ngIf="selectedFriend as chip; else showInput"
+                    >
+                      <span
+                        class="w-full inline-flex items-center gap-2 px-3 py-2"
+                        aria-live="polite"
+                      >
+                        <img
+                          [src]="chip.photoURL || '../../../assets/user.png'"
+                          alt="Avatar"
+                          class="w-5 h-5 rounded-md object-cover object-center"
+                        />
+                        <span class="flex-1 min-w-0 truncate">{{
+                          chip.display
+                        }}</span>
+                        <button
+                          type="button"
+                          class="ml-1 opacity-80 hover:opacity-100 focus:outline-none"
+                          (click)="clearSelection($event)"
+                          aria-label="Remove selected friend"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    </ng-container>
+
+                    <ng-template #showInput>
+                      <input
+                        type="text"
+                        id="friend-search"
+                        placeholder="Search by username..."
+                        class="flex-1 bg-transparent outline-none"
+                        [formControl]="searchCtrl"
+                        (focus)="openDropdown()"
+                        (input)="openDropdown()"
+                        autocomplete="off"
+                      />
+                      <button
+                        type="button"
+                        class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none pointer-events-none"
+                        aria-label="Search friends"
+                      >
+                        <img
+                          src="../../../assets/search.png"
+                          alt="Search icon"
+                          class="w-5 h-5"
+                        />
+                      </button>
+                    </ng-template>
+                  </div>
+
+                  <!-- Dropdown -->
+                  <div
+                    *ngIf="dropdownOpen"
+                    class="absolute left-0 right-0 mt-2 z-50 bg-steel-secondary/90 backdrop-blur border border-steel-primary/30 rounded-xl shadow-2xl max-h-72 overflow-auto p-1"
+                    role="listbox"
+                    [attr.aria-activedescendant]="'opt-' + activeIndex"
+                  >
+                    <ng-container
+                      *ngIf="
+                        filteredFriends$ | async as list;
+                        else loadingFriends
+                      "
+                    >
+                      <ng-container *ngIf="list.length; else noFriends">
+                        <button
+                          *ngFor="let f of list; let i = index"
+                          type="button"
+                          [id]="'opt-' + i"
+                          class="w-full text-left flex items-center gap-3 p-2 hover:bg-steel-bg/30 rounded-lg transition-colors focus:outline-none"
+                          [class.ring-2]="i === activeIndex"
+                          [class.ring-steel-accent]="i === activeIndex"
+                          [class.opacity-60]="!f.online"
+                          [class.cursor-defualt]="!f.online"
+                          [disabled]="!f.online"
+                          [attr.aria-disabled]="!f.online"
+                          (click)="f.online && selectFriend(f)"
+                          role="option"
+                          [attr.aria-selected]="i === activeIndex"
+                          [title]="f.online ? 'Online' : 'Offline'"
+                        >
+                          <img
+                            [src]="
+                              f.profile?.photoURL || '../../../assets/user.png'
+                            "
+                            alt="Friend avatar"
+                            class="w-9 h-9 rounded-xl border-2 border-steel-primary/30 object-cover object-center"
+                          />
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                              <p
+                                class="text-sm font-medium text-white truncate"
+                              >
+                                {{
+                                  f.profile?.displayName ||
+                                    f.profile?.email ||
+                                    f.uid
+                                }}
+                              </p>
+                              <div
+                                class="w-2 h-2 rounded-full flex-shrink-0"
+                                [class.bg-green-500]="f.online"
+                                [class.bg-gray-500]="!f.online"
+                              ></div>
+                            </div>
+                          </div>
+                        </button>
+                      </ng-container>
+
+                      <ng-template #noFriends>
+                        <div class="text-gray-400 text-sm px-3 py-2">
+                          No friends yet. Find some in the Friends panel.
+                        </div>
+                      </ng-template>
+                    </ng-container>
+
+                    <ng-template #loadingFriends>
+                      <div class="text-gray-400 text-sm px-3 py-2">
+                        Loading friends…
+                      </div>
+                    </ng-template>
+                  </div>
                 </div>
               </div>
 
@@ -477,20 +590,6 @@
                     <img
                       src="../../../assets/plus.png"
                       alt="Plus icon"
-                      class="w-5 h-5"
-                    />
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  class="w-full bg-steel-bg/60 hover:bg-steel-secondary border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary"
-                >
-                  <span class="flex items-center justify-center gap-2">
-                    Quick Match
-                    <img
-                      src="../../../assets/blitz.png"
-                      alt="Blitz icon"
                       class="w-5 h-5"
                     />
                   </span>

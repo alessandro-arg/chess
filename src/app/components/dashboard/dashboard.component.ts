@@ -1,4 +1,11 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../auth.service';
@@ -11,6 +18,7 @@ import {
   Observable,
   of,
   shareReplay,
+  startWith,
   switchMap,
 } from 'rxjs';
 import { FriendService, Friendship } from '../../friend.service';
@@ -25,6 +33,7 @@ import { GameRtdbService } from '../../game-rtdb.service';
 import { LatencyService } from '../../latency.service';
 import { LiveClockComponent } from '../live-clock/live-clock.component';
 import { GamesModalComponent } from '../games-modal/games-modal.component';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 type Outcome = 'W' | 'L' | 'D';
 
@@ -36,6 +45,7 @@ type Outcome = 'W' | 'L' | 'D';
     FriendsModalComponent,
     LiveClockComponent,
     GamesModalComponent,
+    ReactiveFormsModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -53,9 +63,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   incoming$?: Observable<Friendship[]>;
   unreadCount$?: Observable<number>;
 
-  friendsPreview$?: Observable<
+  friendsPreview$: Observable<
     Array<{ uid: string; profile: UserProfile | null; online: boolean }>
-  >;
+  > = of([]);
   friendCount$?: Observable<number>;
 
   invitesIncoming$?: Observable<GameInvite[]>;
@@ -73,6 +83,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   recentGames$?: Observable<GameDoc[]>;
   showGamesModal = false;
+
+  searchCtrl = new FormControl<string>('', { nonNullable: true });
+
+  dropdownOpen = false;
+  activeIndex = 0;
+  selectedFriend: { uid: string; display: string; photoURL?: string } | null =
+    null;
+
+  filteredFriends$?: Observable<
+    Array<{ uid: string; profile: UserProfile | null; online: boolean }>
+  >;
+
+  private lastList: Array<{
+    uid: string;
+    profile: UserProfile | null;
+    online: boolean;
+  }> = [];
+
+  @ViewChild('friendSearchRoot', { static: false })
+  friendSearchRoot?: ElementRef;
+
+  selectedOpponentUid: string | null = null;
 
   constructor(
     private readonly auth: AuthService,
@@ -172,7 +204,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.friendsPreview$ = friends$.pipe(
         map((rows) => rows.map((r) => this.otherUidFrom(r.uids))),
         switchMap((uids) => {
-          if (!uids.length)
+          if (!uids.length) {
             return of(
               [] as Array<{
                 uid: string;
@@ -180,6 +212,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 online: boolean;
               }>
             );
+          }
           const items$ = uids.map((uid) =>
             combineLatest([
               this.profile$(uid),
@@ -188,10 +221,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
           );
           return combineLatest(items$);
         }),
-        map((list) =>
-          list.sort((a, b) => Number(b.online) - Number(a.online)).slice(0, 5)
-        ),
+        // keep all; just sort online first
+        map((list) => list.sort((a, b) => Number(b.online) - Number(a.online))),
         shareReplay({ bufferSize: 1, refCount: true })
+      );
+
+      // IMPORTANT: Build filtered list AFTER friendsPreview$ is defined
+      this.filteredFriends$ = combineLatest([
+        this.friendsPreview$,
+        this.searchCtrl.valueChanges.pipe(startWith('')),
+      ]).pipe(
+        map(([friends, query]) => {
+          const q = (query ?? '').trim().toLowerCase();
+
+          // match by displayName OR email OR uid (so offline with profile null still matches by uid)
+          const filtered = friends.filter((f) => {
+            const name = (
+              f.profile?.displayName ||
+              f.profile?.email ||
+              f.uid ||
+              ''
+            ).toLowerCase();
+            return q === '' || name.includes(q);
+          });
+
+          // cap to 5 here (not earlier)
+          const top5 = filtered.slice(0, 5);
+
+          this.lastList = top5;
+          if (this.activeIndex >= top5.length) this.activeIndex = 0;
+
+          return top5;
+        })
       );
     });
 
@@ -286,6 +347,62 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showFriendsModal = true;
   }
 
+  openDropdown() {
+    if (this.selectedFriend) return;
+    this.dropdownOpen = true;
+  }
+
+  closeDropdown() {
+    this.dropdownOpen = false;
+    this.activeIndex = 0;
+  }
+
+  selectFriend(f: {
+    uid: string;
+    profile: UserProfile | null;
+    online: boolean;
+  }) {
+    if (!f.online) return;
+    const display = f.profile?.displayName || f.profile?.email || f.uid;
+    this.selectedFriend = {
+      uid: f.uid,
+      display,
+      photoURL: f.profile?.photoURL ?? undefined,
+    };
+    this.selectedOpponentUid = f.uid;
+    this.searchCtrl.setValue(''); // clear text
+    this.closeDropdown(); // hide dropdown
+  }
+
+  clearSelection(ev?: MouseEvent) {
+    ev?.stopPropagation?.();
+    this.selectedFriend = null;
+    this.selectedOpponentUid = null;
+    this.searchCtrl.setValue(''); // reset input
+    this.openDropdown(); // allow re-selecting someone else
+  }
+
+  onKeydown(e: KeyboardEvent) {
+    if (!this.dropdownOpen) return;
+    const len = this.lastList.length;
+    if (!len) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.activeIndex = (this.activeIndex + 1) % len;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.activeIndex = (this.activeIndex - 1 + len) % len;
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const f = this.lastList[this.activeIndex];
+      if (f?.online) this.selectFriend(f);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      this.closeDropdown();
+    }
+  }
+
   openFriendsModal() {
     this.friendsModalTab = 'search';
     this.showFriendsModal = true;
@@ -317,6 +434,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const target = ev.target as HTMLElement;
     const inBell = target.closest?.('#notif-bell-wrap');
     if (!inBell) this.showNotifPanel = false;
+    const inFriendSearch =
+      this.friendSearchRoot?.nativeElement?.contains(target);
+    if (!inFriendSearch) this.closeDropdown();
   }
 
   async challenge(f: {

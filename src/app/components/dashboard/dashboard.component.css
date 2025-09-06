@@ -1,0 +1,12 @@
+.time-control-btn {
+  @apply py-2 px-3 bg-steel-bg/60 hover:bg-steel-primary/50 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary flex flex-col items-center justify-center;
+}
+
+.color-btn {
+  @apply py-2 px-3 bg-steel-bg/60 hover:bg-steel-primary/30 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary flex flex-col items-center justify-center;
+}
+
+.time-control-btn.active,
+.color-btn.active {
+  @apply bg-steel-primary text-white shadow-sm ring-2 ring-steel-accent;
+}

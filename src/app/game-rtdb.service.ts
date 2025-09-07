@@ -268,9 +268,16 @@ export class GameRtdbService {
     const base = ref(this.db, `rt-games/${gameId}`);
     await runTransaction(base, (g: any) => {
       if (!g || g.status !== 'active') return g;
+
       const meWhite = g.players?.whiteUid === uid;
       g.status = 'resign';
       g.result = meWhite ? '0-1' : '1-0';
+      g.drawOffer = null;
+
+      // freeze timestamp so both clients compute clocks consistently post-resign
+      // RTDB server timestamp sentinel:
+      (g as any).lastMoveAt = { '.sv': 'timestamp' };
+
       return g;
     });
   }

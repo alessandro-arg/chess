@@ -96,6 +96,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   postedResult = false;
 
   confirmResignOpen = false;
+  resigning = false;
   private navigatedOnGameEnd = false;
 
   showGameEndModal = false;
@@ -131,6 +132,8 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     b: null,
   };
   endAnimMs = 3000;
+
+  private didJoinRtdb = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -196,6 +199,7 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.offsetSub?.unsubscribe();
     this.rtdbSub?.unsubscribe();
     if (this.clockTick) clearInterval(this.clockTick);
+    this.didJoinRtdb = false;
   }
 
   get inRoomCount(): number {
@@ -309,6 +313,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.files = this.myColor === 'white' ? FILES_W : FILES_B;
     this.ranks = this.myColor === 'white' ? RANKS_W : RANKS_B;
 
+    if (!this.didJoinRtdb && this.gameId && this.myUid) {
+      this.didJoinRtdb = true;
+      this.rtdbGame.join(this.gameId, this.myUid).catch(() => {});
+    }
+
     // 3) Firestore presence (your existing system)
     this.notifier.joinGame(this.gameId, this.myUid).catch(console.error);
     if (!this.heartbeat) {
@@ -391,7 +400,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
         this.board = this.board.map((row) => [...row].reverse()).reverse();
       }
       this.updateClocksDisplay(g, this.serverOffset);
-      this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
       this.liveGame = g;
 
       // record result once
@@ -479,7 +487,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       // Update clocks using server offset
       this.updateClocksDisplay(g, this.serverOffset);
       // RTDB presence (separate from Firestore presence)
-      this.rtdbGame.join(this.gameId!, this.myUid!).catch(() => {});
       // Cache latest game
       this.liveGame = g;
     });
@@ -776,12 +783,18 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   async confirmResign(): Promise<void> {
-    if (!this.gameId) return;
+    if (!this.gameId || this.resigning) return;
+    this.resigning = true;
     try {
       await this.rtdbGame.resign(this.gameId);
+      // Do not navigate; let RTDB emit the non-active state so both clients animate.
+    } catch (e) {
+      console.error('Resign failed', e);
     } finally {
       this.confirmResignOpen = false;
       this.isGameMenuOpen = false;
+      // keep resigning true until onGameChange sees not-active, or:
+      setTimeout(() => (this.resigning = false), 1500);
     }
   }
 

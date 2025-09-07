@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 
 export interface GameEndData {
   gameId: string;
@@ -26,7 +34,7 @@ export interface GameEndData {
   templateUrl: './game-end.component.html',
   styleUrl: './game-end.component.css',
 })
-export class GameEndComponent implements OnInit {
+export class GameEndComponent implements OnInit, OnChanges {
   @Input() gameData!: GameEndData;
   @Input() isVisible = false;
   @Output() onClose = new EventEmitter<void>();
@@ -40,43 +48,58 @@ export class GameEndComponent implements OnInit {
   winReason: string = '';
 
   ngOnInit(): void {
-    if (this.gameData) {
-      this.calculateOutcome();
-      this.setWinReason();
-      this.calculateEloChange();
+    if (this.gameData) this.recompute();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['gameData'] || changes['isVisible']) {
+      if (this.gameData && this.isVisible) this.recompute();
     }
   }
 
+  private recompute(): void {
+    this.calculateOutcome();
+    this.setWinReason();
+    this.calculateEloChange();
+  }
+
   get leftPlayerName(): string {
-    return this.gameData.myColor === 'white'
+    return this.leftPlayerColor === 'white'
+      ? this.gameData.myColor === 'white'
+        ? this.gameData.myProfile.name
+        : this.gameData.oppProfile.name
+      : this.gameData.myColor === 'black'
       ? this.gameData.myProfile.name
       : this.gameData.oppProfile.name;
   }
 
   get rightPlayerName(): string {
-    return this.gameData.myColor === 'white'
-      ? this.gameData.oppProfile.name
-      : this.gameData.myProfile.name;
+    return this.rightPlayerColor === 'black'
+      ? this.gameData.myColor === 'black'
+        ? this.gameData.myProfile.name
+        : this.gameData.oppProfile.name
+      : this.gameData.myColor === 'white'
+      ? this.gameData.myProfile.name
+      : this.gameData.oppProfile.name;
   }
 
   get leftPlayerPhoto(): string {
-    return this.gameData.myColor === 'white'
+    return this.leftPlayerColor === this.gameData.myColor
       ? this.gameData.myProfile.photoURL
       : this.gameData.oppProfile.photoURL;
   }
 
   get rightPlayerPhoto(): string {
-    return this.gameData.myColor === 'white'
-      ? this.gameData.oppProfile.photoURL
-      : this.gameData.myProfile.photoURL;
+    return this.rightPlayerColor === this.gameData.myColor
+      ? this.gameData.myProfile.photoURL
+      : this.gameData.oppProfile.photoURL;
   }
 
   get leftPlayerColor(): 'white' | 'black' {
-    return this.gameData.myColor === 'white' ? 'white' : 'black';
+    return 'white';
   }
-
   get rightPlayerColor(): 'white' | 'black' {
-    return this.gameData.myColor === 'white' ? 'black' : 'white';
+    return 'black';
   }
 
   get gameScore(): string {
@@ -84,31 +107,21 @@ export class GameEndComponent implements OnInit {
   }
 
   get currentPlayerElo(): number {
-    return this.gameData.myProfile.elo || 1200;
+    return this.gameData.myProfile.elo ?? 1200;
   }
 
   get winnerText(): string {
-    if (this.outcome === 'win') {
-      return this.gameData.myColor === 'white'
-        ? 'Weiß gewinnt'
-        : 'Schwarz gewinnt';
-    } else if (this.outcome === 'loss') {
-      return this.gameData.myColor === 'white'
-        ? 'Schwarz gewinnt'
-        : 'Weiß gewinnt';
-    } else {
-      return 'Remis';
-    }
+    if (this.gameData.result === '1-0') return 'Weiß gewinnt';
+    if (this.gameData.result === '0-1') return 'Schwarz gewinnt';
+    return 'Remis';
   }
 
   get outcomeText(): string {
-    if (this.outcome === 'win') {
-      return `Du hast gewonnen durch ${this.winReason}`;
-    } else if (this.outcome === 'loss') {
-      return `Gegner gewann durch ${this.winReason}`;
-    } else {
-      return 'Partie beendet unentschieden';
-    }
+    if (this.outcome === 'win')
+      return `Du hast durch ${this.winReason} gewonnen`;
+    if (this.outcome === 'loss')
+      return `Gegner hat durch ${this.winReason} gewonnen`;
+    return 'Unentschieden';
   }
 
   close(): void {

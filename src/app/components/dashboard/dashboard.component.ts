@@ -75,6 +75,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   botDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
   botMinutes = 10; // 5 | 10 | 20
 
+  friendMinutes = 10;
+  friendColor: 'white' | 'black' | 'random' = 'random';
+
   private localSeenAt$ = new BehaviorSubject<number>(0);
 
   latency$ = this.latencySvc.latency$;
@@ -284,6 +287,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   setBotMinutes(min: number) {
     this.botMinutes = min;
   }
+
+  setFriendMinutes(min: number) {
+    this.friendMinutes = min;
+  }
+
+  setFriendColor(color: string) {}
 
   async startBotGame() {
     const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');

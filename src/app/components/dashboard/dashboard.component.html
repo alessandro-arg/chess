@@ -375,27 +375,27 @@
                 <div class="flex gap-2">
                   <button
                     type="button"
-                    (click)="setBotMinutes(5)"
-                    [class.bg-steel-primary]="botMinutes === 5"
-                    [class.text-white]="botMinutes === 5"
+                    (click)="setFriendMinutes(5)"
+                    [class.bg-steel-primary]="friendMinutes === 5"
+                    [class.text-white]="friendMinutes === 5"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     5 min
                   </button>
                   <button
                     type="button"
-                    (click)="setBotMinutes(10)"
-                    [class.bg-steel-primary]="botMinutes === 10"
-                    [class.text-white]="botMinutes === 10"
+                    (click)="setFriendMinutes(10)"
+                    [class.bg-steel-primary]="friendMinutes === 10"
+                    [class.text-white]="friendMinutes === 10"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     10 min
                   </button>
                   <button
                     type="button"
-                    (click)="setBotMinutes(20)"
-                    [class.bg-steel-primary]="botMinutes === 20"
-                    [class.text-white]="botMinutes === 20"
+                    (click)="setFriendMinutes(20)"
+                    [class.bg-steel-primary]="friendMinutes === 20"
+                    [class.text-white]="friendMinutes === 20"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     20 min
@@ -410,27 +410,27 @@
                 <div class="flex gap-2">
                   <button
                     type="button"
-                    (click)="setBotMinutes(5)"
-                    [class.bg-steel-primary]="botMinutes === 5"
-                    [class.text-white]="botMinutes === 5"
+                    (click)="setFriendColor('white')"
+                    [class.bg-steel-primary]="friendColor === 'white'"
+                    [class.text-white]="friendColor === 'white'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     White
                   </button>
                   <button
                     type="button"
-                    (click)="setBotMinutes(10)"
-                    [class.bg-steel-primary]="botMinutes === 10"
-                    [class.text-white]="botMinutes === 10"
+                    (click)="setFriendColor('black')"
+                    [class.bg-steel-primary]="friendColor === 'black'"
+                    [class.text-white]="friendColor === 'black'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     Black
                   </button>
                   <button
                     type="button"
-                    (click)="setBotMinutes(20)"
-                    [class.bg-steel-primary]="botMinutes === 20"
-                    [class.text-white]="botMinutes === 20"
+                    (click)="setFriendColor('random')"
+                    [class.bg-steel-primary]="friendColor === 'random'"
+                    [class.text-white]="friendColor === 'random'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     Random
@@ -451,7 +451,6 @@
                   <div
                     class="w-full bg-steel-bg/60 border border-steel-primary/40 focus-within:border-steel-accent text-white placeholder-gray-400 rounded-lg text-sm focus-within:outline-none focus-within:ring-2 focus-within:ring-steel-accent flex items-center gap-2"
                     [ngClass]="selectedFriend ? 'px-0 py-0' : 'px-3 py-2'"
-                    (click)="!selectedFriend && openDropdown()"
                   >
                     <!-- Selected chip -->
                     <ng-container
@@ -480,7 +479,10 @@
                       </span>
                     </ng-container>
 
-                    <ng-template #showInput>
+                    <ng-template
+                      #showInput
+                      (click)="!selectedFriend && openDropdown()"
+                    >
                       <input
                         type="text"
                         id="friend-search"

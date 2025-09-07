@@ -132,14 +132,6 @@ export class GameEndComponent implements OnInit, OnChanges {
     this.onBackToDashboard.emit();
   }
 
-  rematch(): void {
-    this.onRematch.emit();
-  }
-
-  newGame(): void {
-    this.onNewGame.emit();
-  }
-
   analyze(): void {
     this.onAnalyze.emit();
   }

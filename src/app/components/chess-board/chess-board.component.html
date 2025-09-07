@@ -1,9 +1,7 @@
-<div class="flex flex-col items-center min-h-screen bg-steel-bg pt-10">
+<div class="flex flex-col items-center h-full sm:h-dvh bg-steel-bg sm:pt-10">
   <!-- Game Header -->
-  <div class="w-full max-w-2xl mb-6 flex items-center p-4">
-    <div
-      class="bg-slate-800 rounded-lg flex-1 shadow-2xl px-6 py-4 border border-slate-600"
-    >
+  <div class="w-full max-w-2xl mb-3 sm:mb-6 mt-2 flex items-center p-1 sm:p-4">
+    <div [ngClass]="oppContainerClasses()">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-3">
           <div
@@ -30,8 +28,8 @@
             </div>
           </div>
         </div>
-        <div class="text-center">
-          <div class="text-slate-300 font-mono text-lg">
+        <div [ngClass]="oppClockClasses()">
+          <div class="w-[40px] flex items-center justify-center py-1 px-3">
             {{ oppClockDisplay }}
           </div>
         </div>
@@ -39,7 +37,7 @@
     </div>
   </div>
 
-  <div
+  <!-- <div
     *ngIf="showStartMessage"
     class="h-dvh w-dvw absolute top-0 left-0 bg-black/20 transition-all duration-500 z-[80] flex justify-center items-center"
   >
@@ -50,7 +48,7 @@
         The game is starting! Good luck and have fun 🎉
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Chess Board Container -->
   <div class="relative">
@@ -76,13 +74,19 @@
                   width: clamp(50px, 10vw, 100px);
                   height: clamp(50px, 10vw, 100px);
                 "
+                [ngClass]="{
+                  'bg-emerald-400/30':
+                    endAnimActive && isWinnerKingCell(rowIndex, colIndex),
+                  'bg-red-400/30':
+                    endAnimActive && isLoserKingCell(rowIndex, colIndex)
+                }"
               >
                 <ng-container *ngIf="square as s">
                   <img
                     [src]="pieceSrc(s)"
                     [alt]="s"
                     draggable="false"
-                    class="pointer-events-none select-none w-[80%] h-[80%] object-contain transition-transform duration-200 hover:scale-105 drop-shadow-lg"
+                    class="pointer-events-none select-none w-[80%] h-[80%] object-contain transition-transform duration-200 hover:scale-105 drop-shadow-lg z-[10]"
                     [style.opacity]="
                       dragging &&
                       dragFrom &&
@@ -97,7 +101,7 @@
                     *ngIf="
                       endAnimActive && isWinnerKingCell(rowIndex, colIndex)
                     "
-                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[65]"
+                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[15] transition-colors duration-300"
                   >
                     <div class="end-badge animate-end-pop">
                       <ng-container [ngSwitch]="endAnimType">
@@ -195,7 +199,7 @@
                   <!-- LOSER badge (red) -->
                   <div
                     *ngIf="endAnimActive && isLoserKingCell(rowIndex, colIndex)"
-                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[65]"
+                    class="pointer-events-none absolute inset-0 flex items-center justify-center z-[15] transition-colors duration-300"
                   >
                     <div class="end-badge animate-end-pop">
                       <ng-container [ngSwitch]="endAnimType">
@@ -291,10 +295,15 @@
                   </div>
                 </ng-container>
 
+                <div
+                  *ngIf="isLastMoveCell(rowIndex, colIndex)"
+                  class="pointer-events-none absolute inset-0 z-[5] bg-sky-400/30 transition-colors"
+                ></div>
+
                 <!-- Coordinate Labels (bottom row only) -->
                 <div
                   *ngIf="rowIndex === 7"
-                  class="absolute bottom-0 right-1 text-xs sm:text-base font-semibold"
+                  class="absolute bottom-0 right-1 text-[8px] sm:text-base font-semibold"
                   [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ files[colIndex] }}
@@ -302,7 +311,7 @@
 
                 <div
                   *ngIf="colIndex === 0"
-                  class="absolute top-0 left-1 text-xs sm:text-base font-semibold"
+                  class="absolute top-0 left-1 text-[8px] sm:text-base font-semibold"
                   [ngClass]="getCoordTextClass(rowIndex, colIndex)"
                 >
                   {{ ranks[rowIndex] }}
@@ -328,11 +337,9 @@
 
   <!-- Game Footer -->
   <div
-    class="w-full max-w-2xl mt-6 flex items-center gap-5 justify-between p-4"
+    class="w-full max-w-2xl mt-3 sm:mt-6 flex items-center gap-5 justify-between p-1 sm:p-4"
   >
-    <div
-      class="w-full bg-slate-800 rounded-lg shadow-2xl px-6 py-4 border border-slate-600 flex gap-4 justify-between"
-    >
+    <div [ngClass]="myContainerClasses()">
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-3">
           <div
@@ -359,15 +366,15 @@
         </div>
       </div>
       <!-- Game Menu Button -->
-      <div class="w-fit flex items-center gap-4">
-        <div class="text-center">
-          <div class="text-slate-300 font-mono text-lg">
+      <div class="w-fit flex items-center gap-1 sm:gap-4">
+        <div [ngClass]="myClockClasses()">
+          <div class="w-[40px] flex items-center justify-center py-1 px-3">
             {{ myClockDisplay }}
           </div>
         </div>
         <button
           (click)="toggleGameMenu()"
-          class="hover:bg-slate-600 text-slate-200 p-3 rounded-lg shadow-lg border border-slate-600 transition-all duration-200 hover:shadow-xl font-semibold flex items-center gap-2"
+          class="hover:scale-105 hover:text-white text-slate-200 p-3 border-none transition-all duration-200 font-semibold flex items-center gap-2"
         >
           <svg
             class="w-5 h-5"

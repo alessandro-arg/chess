@@ -135,6 +135,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   private didJoinRtdb = false;
 
+  lastFromId: string | null = null;
+  lastToId: string | null = null;
+
+  currentTurn: 'w' | 'b' | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -287,6 +292,34 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     });
   }
 
+  private setLastMoveFromDiff(prevFen: string | null, nextFen: string | null) {
+    if (!prevFen || !nextFen || prevFen === nextFen) return;
+    try {
+      const cPrev = new Chess(prevFen);
+      const legal = cPrev.moves({ verbose: true }) as Array<any>;
+      let found: any | null = null;
+      for (const m of legal) {
+        const c2 = new Chess(prevFen);
+        c2.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+        if (c2.fen() === nextFen) {
+          found = m;
+          break;
+        }
+      }
+      if (found) {
+        this.lastFromId = this.algebraicToCellId(found.from);
+        this.lastToId = this.algebraicToCellId(found.to);
+      }
+    } catch {
+      // swallow – best effort only
+    }
+  }
+
+  isLastMoveCell(row: number, col: number): boolean {
+    const id = `${col}-${row}`;
+    return id === this.lastFromId || id === this.lastToId;
+  }
+
   private onGameChange(game: GameDoc | null) {
     if (!game) return;
     if (!this.gameId || !this.myUid || !game.players) return;
@@ -393,6 +426,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.rtdbSub?.unsubscribe();
     this.rtdbSub = this.rtdbGame.game$(this.gameId).subscribe(async (g) => {
       if (!g) return;
+
+      const prevFen = this.liveGame?.fen ?? null;
+      this.setLastMoveFromDiff(prevFen, g.fen);
 
       // --- 1) Update UI ASAP (no awaits here) ---
       this.applyFen(g.fen);
@@ -1137,6 +1173,92 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     const meWhite = this.myColor === 'white';
     this.myClockDisplay = fmt(meWhite ? wNow : bNow);
     this.oppClockDisplay = fmt(meWhite ? bNow : wNow);
+    this.currentTurn = g.status === 'active' ? (g.turn as 'w' | 'b') : null;
+  }
+
+  myClockClasses() {
+    const myIsWhite = this.myColor === 'white';
+    const active =
+      !!this.currentTurn &&
+      ((this.currentTurn === 'w' && myIsWhite) ||
+        (this.currentTurn === 'b' && !myIsWhite));
+
+    const base = ['px-2', 'py-1', 'rounded'];
+
+    return active
+      ? [...base, 'text-white', 'font-semibold', 'border', 'border-white']
+      : [
+          ...base,
+          'text-gray-400',
+          'font-normal',
+          'border',
+          'border-transparent',
+        ];
+  }
+
+  oppClockClasses() {
+    const myIsWhite = this.myColor === 'white';
+    const oppTurn =
+      !!this.currentTurn &&
+      ((this.currentTurn === 'w' && !myIsWhite) ||
+        (this.currentTurn === 'b' && myIsWhite));
+
+    const base = ['px-2', 'py-1', 'rounded'];
+
+    return oppTurn
+      ? [...base, 'text-white', 'font-semibold', 'border', 'border-white']
+      : [
+          ...base,
+          'text-gray-400',
+          'font-normal',
+          'border',
+          'border-transparent',
+        ];
+  }
+
+  oppContainerClasses() {
+    const myIsWhite = this.myColor === 'white';
+    const oppTurn =
+      !!this.currentTurn &&
+      ((this.currentTurn === 'w' && !myIsWhite) ||
+        (this.currentTurn === 'b' && myIsWhite));
+
+    return [
+      'bg-slate-800',
+      'rounded-lg',
+      'flex-1',
+      'shadow-2xl',
+      'px-6',
+      'py-4',
+      oppTurn ? 'border-white' : 'border-slate-600',
+      'border',
+      'transition-colors',
+      'duration-200',
+    ];
+  }
+
+  myContainerClasses() {
+    const myIsWhite = this.myColor === 'white';
+    const myTurn =
+      !!this.currentTurn &&
+      ((this.currentTurn === 'w' && myIsWhite) ||
+        (this.currentTurn === 'b' && !myIsWhite));
+
+    return [
+      'w-full',
+      'bg-slate-800',
+      'rounded-lg',
+      'flex',
+      'gap-4',
+      'justify-between',
+      'shadow-2xl',
+      'px-6',
+      'py-4',
+      myTurn ? 'border-white' : 'border-slate-600',
+      'border',
+      'transition-colors',
+      'duration-200',
+    ];
   }
 
   private findKingPositionsFromBoard() {

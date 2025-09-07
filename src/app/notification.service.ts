@@ -30,6 +30,8 @@ export interface GameInvite {
   gameId?: string;
   createdAt: any;
   updatedAt: any;
+  tc?: { minutes: number; increment: number };
+  colorPref?: 'white' | 'black' | 'random';
 }
 
 export interface GameDoc {
@@ -217,6 +219,36 @@ export class NotificationService {
     );
   }
 
+  async sendFriendInvite(
+    toUid: string,
+    opts: {
+      minutes: number;
+      increment?: number;
+      color: 'white' | 'black' | 'random';
+    }
+  ): Promise<void> {
+    const fromUid = this.auth.currentUser?.uid;
+    if (!fromUid || !toUid || fromUid === toUid) return;
+
+    const id = `${fromUid}_${toUid}`;
+    const ref = doc(this.firestore, 'gameInvites', id);
+
+    await setDoc(
+      ref,
+      {
+        id,
+        fromUid,
+        toUid,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        tc: { minutes: opts.minutes, increment: opts.increment ?? 0 },
+        colorPref: opts.color,
+      } as GameInvite,
+      { merge: true }
+    );
+  }
+
   incomingGameInvites$(): Observable<GameInvite[]> {
     const user = this.auth.currentUser;
     if (!user) return of([]);
@@ -271,21 +303,53 @@ export class NotificationService {
     const me = this.auth.currentUser?.uid;
     if (!me || inv.toUid !== me) throw new Error('Not allowed');
 
+    const minutes = inv.tc?.minutes ?? 15;
+    const increment = inv.tc?.increment ?? 0;
+    let white = inv.fromUid;
+    let black = inv.toUid;
+
+    switch (inv.colorPref) {
+      case 'white':
+        white = inv.fromUid;
+        black = inv.toUid;
+        break;
+      case 'black':
+        white = inv.toUid;
+        black = inv.fromUid;
+        break;
+      case 'random':
+        // deterministic-ish random using createdAt seconds fallback
+        {
+          const seed =
+            (inv as any)?.createdAt?.seconds ?? Math.floor(Date.now() / 1000);
+          const r = seed % 2;
+          if (r === 0) {
+            white = inv.fromUid;
+            black = inv.toUid;
+          } else {
+            white = inv.toUid;
+            black = inv.fromUid;
+          }
+        }
+        break;
+      default:
+        // legacy behavior already set above
+        break;
+    }
+
     const gamesCol = collection(this.firestore, 'games');
     const gameRef = await addDoc(gamesCol, {
-      players: {
-        white: inv.fromUid,
-        black: inv.toUid,
-        both: [inv.fromUid, inv.toUid],
-      },
+      players: { white, black, both: [inv.fromUid, inv.toUid] },
+      mode: 'pvp',
+      tc: { minutes, increment },
       status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
-    await this.rtdbGame.create(gameRef.id, inv.fromUid, inv.toUid, {
-      minutes: 15,
-      increment: 0,
+    await this.rtdbGame.create(gameRef.id, white, black, {
+      minutes,
+      increment,
     });
 
     await updateDoc(ref, {

@@ -331,11 +331,6 @@
               >
                 <span class="flex items-center justify-center gap-2">
                   Start Bot Game
-                  <img
-                    src="../../../assets/play-icon.png"
-                    alt="Play icon"
-                    class="w-5 h-5"
-                  />
                 </span>
               </button>
             </article>
@@ -411,8 +406,8 @@
                   <button
                     type="button"
                     (click)="setFriendColor('white')"
-                    [class.bg-steel-primary]="friendColor === 'white'"
-                    [class.text-white]="friendColor === 'white'"
+                    [class.bg-steel-primary]="friendColor == 'white'"
+                    [class.text-white]="friendColor == 'white'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     White
@@ -420,8 +415,8 @@
                   <button
                     type="button"
                     (click)="setFriendColor('black')"
-                    [class.bg-steel-primary]="friendColor === 'black'"
-                    [class.text-white]="friendColor === 'black'"
+                    [class.bg-steel-primary]="friendColor == 'black'"
+                    [class.text-white]="friendColor == 'black'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     Black
@@ -429,8 +424,8 @@
                   <button
                     type="button"
                     (click)="setFriendColor('random')"
-                    [class.bg-steel-primary]="friendColor === 'random'"
-                    [class.text-white]="friendColor === 'random'"
+                    [class.bg-steel-primary]="friendColor == 'random'"
+                    [class.text-white]="friendColor == 'random'"
                     class="px-3 py-1 text-xs font-medium bg-steel-bg/60 hover:bg-steel-primary/20 text-gray-300 hover:text-white border border-steel-primary/30 hover:border-steel-accent rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   >
                     Random
@@ -581,19 +576,16 @@
                 </div>
               </div>
 
-              <!-- Quick Challenge -->
+              <!-- Play button -->
               <div class="space-y-3">
                 <button
                   type="button"
-                  class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
+                  class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg disabled:opacity-50 disabled:cursor-default"
+                  (click)="startFriendGame()"
+                  [disabled]="!selectedOpponentUid"
                 >
                   <span class="flex items-center justify-center gap-2">
-                    Create Game Room
-                    <img
-                      src="../../../assets/plus.png"
-                      alt="Plus icon"
-                      class="w-5 h-5"
-                    />
+                    Send request!
                   </span>
                 </button>
               </div>

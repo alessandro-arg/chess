@@ -292,7 +292,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.friendMinutes = min;
   }
 
-  setFriendColor(color: string) {}
+  setFriendColor(color: 'white' | 'black' | 'random') {
+    this.friendColor = color;
+  }
+
+  async startFriendGame() {
+    const me = this.uid ?? this.route.snapshot.paramMap.get('uid');
+    const opp = this.selectedOpponentUid;
+
+    if (!me) return;
+    if (!opp) {
+      alert('Pick an online friend first.');
+      return;
+    }
+
+    try {
+      await this.notifier.sendFriendInvite(opp, {
+        minutes: this.friendMinutes,
+        increment: 0,
+        color: this.friendColor,
+      });
+
+      const inviteId = `${me}_${opp}`;
+      this.router.navigate([`/${me}/chess-board`], {
+        queryParams: { invite: inviteId, vs: opp },
+      });
+    } catch (e) {
+      console.error(e);
+      alert('Could not create the game invite. Please try again.');
+    }
+  }
 
   async startBotGame() {
     const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
@@ -369,7 +398,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectFriend(f: {
     uid: string;
     profile: UserProfile | null;
-    online: boolean;
+    online?: boolean;
   }) {
     if (!f.online) return;
     const display = f.profile?.displayName || f.profile?.email || f.uid;
@@ -379,8 +408,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       photoURL: f.profile?.photoURL ?? undefined,
     };
     this.selectedOpponentUid = f.uid;
-    this.searchCtrl.setValue(''); // clear text
-    this.closeDropdown(); // hide dropdown
+    this.searchCtrl.setValue('');
+    this.closeDropdown();
   }
 
   clearSelection(ev?: MouseEvent) {

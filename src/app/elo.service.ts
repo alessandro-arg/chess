@@ -122,6 +122,7 @@ export class EloService {
       if (!['5', '10', '20'].includes(tc as any)) return false;
 
       const whiteUid = game.players?.white;
+      if (me !== whiteUid) return false;
       const blackUid = game.players?.black;
       if (!whiteUid || !blackUid) return false;
 

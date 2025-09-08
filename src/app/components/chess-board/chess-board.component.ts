@@ -464,18 +464,20 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       // record result once
       if (!this.postedResult && g.result && g.status !== 'active') {
         this.postedResult = true;
-        const statusMap: any = {
-          mate: 'mate',
-          draw: 'draw',
-          flag: 'flag',
-          resign: 'resign',
-        };
-        this.notifier
-          .updateGameResult(this.gameId!, {
-            status: statusMap[g.status] || 'finished',
-            result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
-          })
-          .catch(() => {});
+        if (this.myColor === 'white') {
+          const statusMap: any = {
+            mate: 'mate',
+            draw: 'draw',
+            flag: 'flag',
+            resign: 'resign',
+          };
+          try {
+            await this.notifier.updateGameResult(this.gameId!, {
+              status: statusMap[g.status] || 'finished',
+              result: g.result as '1-0' | '0-1' | '1/2-1/2' | null,
+            });
+          } catch {}
+        }
       }
 
       if (this.isBotGame && g.status === 'active') {
@@ -1306,6 +1308,18 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
 
   isLoserKingCell(row: number, col: number): boolean {
     if (!this.endAnimActive || !this.loserColor) return false;
+    const kp = this.kingPos[this.loserColor];
+    return !!kp && kp.row === row && kp.col === col;
+  }
+
+  isWinnerKingPos(row: number, col: number): boolean {
+    if (!this.winnerColor) return false;
+    const kp = this.kingPos[this.winnerColor];
+    return !!kp && kp.row === row && kp.col === col;
+  }
+
+  isLoserKingPos(row: number, col: number): boolean {
+    if (!this.loserColor) return false;
     const kp = this.kingPos[this.loserColor];
     return !!kp && kp.row === row && kp.col === col;
   }

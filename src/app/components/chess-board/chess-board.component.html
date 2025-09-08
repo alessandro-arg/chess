@@ -61,13 +61,26 @@
                   width: clamp(50px, 10vw, 100px);
                   height: clamp(50px, 10vw, 100px);
                 "
-                [ngClass]="{
-                  'bg-emerald-400/30':
-                    endAnimActive && isWinnerKingCell(rowIndex, colIndex),
-                  'bg-red-400/30':
-                    endAnimActive && isLoserKingCell(rowIndex, colIndex)
-                }"
               >
+                <div
+                  class="pointer-events-none absolute inset-0 z-[8] transition-opacity duration-700 ease-out"
+                  [class.opacity-100]="
+                    endAnimActive &&
+                    (isWinnerKingPos(rowIndex, colIndex) ||
+                      isLoserKingPos(rowIndex, colIndex))
+                  "
+                  [class.opacity-0]="
+                    !(
+                      endAnimActive &&
+                      (isWinnerKingPos(rowIndex, colIndex) ||
+                        isLoserKingPos(rowIndex, colIndex))
+                    )
+                  "
+                  [ngClass]="{
+                    'bg-emerald-400/40': isWinnerKingPos(rowIndex, colIndex),
+                    'bg-red-400/40': isLoserKingPos(rowIndex, colIndex)
+                  }"
+                ></div>
                 <ng-container *ngIf="square as s">
                   <img
                     [src]="pieceSrc(s)"

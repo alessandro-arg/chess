@@ -80,23 +80,40 @@ export class AuthService {
     const ref = doc(this.firestore, 'users', user.uid);
     const snap = await getDoc(ref);
 
+    const base = {
+      uid: user.uid,
+      displayName: user.displayName ?? null,
+      email: user.email ?? null,
+      photoURL: user.photoURL ?? null,
+    };
+
     if (!snap.exists()) {
-      await setDoc(ref, {
-        uid: user.uid,
-        displayName: user.displayName ?? null,
-        email: user.email ?? null,
-        photoURL: user.photoURL ?? null,
-        createdAt: serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-      });
+      await setDoc(
+        ref,
+        {
+          ...base,
+          createdAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          elo: {
+            '5': { rating: 400, games: 0 },
+            '10': { rating: 400, games: 0 },
+            '20': { rating: 400, games: 0 },
+          },
+        },
+        { merge: true }
+      );
     } else {
       await updateDoc(ref, {
-        displayName: user.displayName ?? null,
-        email: user.email ?? null,
-        photoURL: user.photoURL ?? null,
+        ...base,
         lastLoginAt: serverTimestamp(),
       });
       const data = snap.data() as any;
+      const patch: any = {};
+      if (!data?.elo?.['5']) patch['elo.5'] = { rating: 400, games: 0 };
+      if (!data?.elo?.['10']) patch['elo.10'] = { rating: 400, games: 0 };
+      if (!data?.elo?.['20']) patch['elo.20'] = { rating: 400, games: 0 };
+      if (Object.keys(patch).length) await updateDoc(ref, patch);
+
       if (!data.createdAt && user.metadata?.creationTime) {
         await updateDoc(ref, {
           createdAt: new Date(user.metadata.creationTime),

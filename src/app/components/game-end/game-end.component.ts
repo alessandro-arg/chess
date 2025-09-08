@@ -7,7 +7,13 @@ import {
   OnInit,
   OnChanges,
   SimpleChanges,
+  inject,
+  OnDestroy,
 } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
+import { doc, docData, Firestore, getDoc } from '@angular/fire/firestore';
+import { NotificationService } from '../../notification.service';
+import { Subscription } from 'rxjs';
 
 export interface GameEndData {
   gameId: string;
@@ -34,7 +40,7 @@ export interface GameEndData {
   templateUrl: './game-end.component.html',
   styleUrl: './game-end.component.css',
 })
-export class GameEndComponent implements OnInit, OnChanges {
+export class GameEndComponent implements OnInit, OnChanges, OnDestroy {
   @Input() gameData!: GameEndData;
   @Input() isVisible = false;
   @Output() onClose = new EventEmitter<void>();
@@ -43,18 +49,69 @@ export class GameEndComponent implements OnInit, OnChanges {
   @Output() onNewGame = new EventEmitter<void>();
   @Output() onAnalyze = new EventEmitter<void>();
 
+  private db = inject(Firestore);
+  private auth = inject(Auth);
+  private notif = inject(NotificationService);
+
   outcome: 'win' | 'loss' | 'draw' = 'draw';
   eloChange: number = 0;
   winReason: string = '';
+  private gameSub?: Subscription;
 
   ngOnInit(): void {
-    if (this.gameData) this.recompute();
+    if (this.gameData && this.isVisible) this.activate();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['gameData'] || changes['isVisible']) {
-      if (this.gameData && this.isVisible) this.recompute();
+    if (
+      (changes['gameData'] || changes['isVisible']) &&
+      this.gameData &&
+      this.isVisible
+    ) {
+      this.activate();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.gameSub?.unsubscribe();
+  }
+
+  private async activate() {
+    this.recompute();
+    // Kick the client-side Elo pipeline on *this* client too (confirm/vote/finalize)
+    await this.notif.syncEloForFinishedGame(this.gameData.gameId);
+
+    // Live-subscribe to the game doc to pick up ratingsBefore/After when computed
+    this.gameSub?.unsubscribe();
+    const gref = doc(this.db, 'games', this.gameData.gameId);
+    this.gameSub = docData(gref).subscribe(async (g: any) => {
+      if (!g) return;
+
+      const mySide: 'white' | 'black' = this.gameData.myColor;
+      const before = g?.ratingsBefore?.[mySide];
+      const after = g?.ratingsAfter?.[mySide];
+
+      if (typeof before === 'number' && typeof after === 'number') {
+        this.eloChange = Math.round(after - before);
+        // show the updated rating in the modal
+        this.gameData.myProfile.elo = Math.round(after);
+        return;
+      }
+
+      // Fallback: if Elo not computed yet, preview from my vote (instant UI)
+      const voteRef = doc(
+        this.db,
+        `games/${this.gameData.gameId}/eloVotes/${this.gameData.myUid}`
+      );
+      const voteSnap = await getDoc(voteRef);
+      if (voteSnap.exists()) {
+        const v: any = voteSnap.data();
+        if (typeof v?.before === 'number' && typeof v?.after === 'number') {
+          this.eloChange = Math.round(v.after - v.before);
+          this.gameData.myProfile.elo = Math.round(v.after);
+        }
+      }
+    });
   }
 
   private recompute(): void {

@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  inject,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -35,6 +36,7 @@ import { LiveClockComponent } from '../live-clock/live-clock.component';
 import { GamesModalComponent } from '../games-modal/games-modal.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ShareMenuComponent } from '../share-menu/share-menu.component';
+import { RatingsService } from '../../ratings.service';
 
 type Outcome = 'W' | 'L' | 'D';
 
@@ -114,6 +116,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showShare = false;
   profileTitle = 'Check out my profile';
   profileUrl = 'https://chess2.alessandro-argenziano.com';
+
+  private ratings = inject(RatingsService);
+
+  private elo$ = this.ratings.myElo$;
+  private d5$ = this.ratings.lastDeltaForTc$(5);
+  private d10$ = this.ratings.lastDeltaForTc$(10);
+  private d20$ = this.ratings.lastDeltaForTc$(20);
+
+  vm$ = combineLatest([this.elo$, this.d5$, this.d10$, this.d20$]).pipe(
+    map(([elo, d5, d10, d20]) => ({
+      r5: Math.round(elo?.['5']?.rating ?? 400),
+      r10: Math.round(elo?.['10']?.rating ?? 400),
+      r20: Math.round(elo?.['20']?.rating ?? 400),
+      d5: Math.round(d5 ?? 0),
+      d10: Math.round(d10 ?? 0),
+      d20: Math.round(d20 ?? 0),
+    }))
+  );
+
+  sign(n: number) {
+    return n > 0 ? `+${n}` : `${n}`;
+  }
+  deltaClass(n: number) {
+    return n >= 0 ? 'text-green-400' : 'text-red-400';
+  }
 
   constructor(
     private readonly auth: AuthService,

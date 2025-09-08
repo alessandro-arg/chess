@@ -118,8 +118,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   dragArmY = 0;
   dragThresholdPx = 14;
 
-  showStartMessage = false;
-
   endAnimActive = false;
   endAnimType: 'flag' | 'mate' | 'resign' | 'draw' | null = null;
   winnerColor: 'w' | 'b' | null = null;
@@ -139,6 +137,9 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   lastToId: string | null = null;
 
   currentTurn: 'w' | 'b' | null = null;
+
+  tcMinutes: 5 | 10 | 20 | null = null;
+  pendingInviteMinutes: 5 | 10 | 20 | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -232,11 +233,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
   }
 
   get myEloDisplay(): string {
-    return this.myElo != null ? String(this.myElo) : 'null';
+    return this.myElo != null ? String(this.myElo) : '∽';
   }
 
   get oppEloDisplay(): string {
-    return this.oppElo != null ? String(this.oppElo) : 'null';
+    return this.oppElo != null ? String(this.oppElo) : '∽';
   }
 
   pieceSrc(code: string | null): string {
@@ -262,6 +263,11 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       await this.returnToDashboard('Game invitation was cancelled.');
       return;
     }
+
+    const m = Number(inv.tc?.minutes);
+    this.pendingInviteMinutes =
+      m === 5 || m === 10 || m === 20 ? (m as 5 | 10 | 20) : 10;
+
     if (inv.status === 'declined') {
       await this.returnToDashboard('Your game request was declined.');
       return;
@@ -271,6 +277,8 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       this.router.navigate([`/${this.myUid}/chess-board`], {
         queryParams: { game: inv.gameId },
       });
+    } else if (this.vsUid) {
+      this.hydrateWaitingHeader(this.vsUid);
     }
   }
 
@@ -285,10 +293,22 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.profilesSub = combineLatest([me$, opp$]).subscribe(([me, opp]) => {
       this.myName = me?.displayName || me?.email || 'You';
       this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
-      this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
       this.oppName = opp?.displayName || opp?.email || vsUid;
       this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
-      this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+
+      const tcKey = ((this.pendingInviteMinutes ?? 10) + '') as
+        | '5'
+        | '10'
+        | '20';
+      const myBlock = (me as any)?.elo?.[tcKey];
+      const oppBlock = (opp as any)?.elo?.[tcKey];
+
+      this.myElo =
+        typeof myBlock?.rating === 'number' ? Math.round(myBlock.rating) : 400;
+      this.oppElo =
+        typeof oppBlock?.rating === 'number'
+          ? Math.round(oppBlock.rating)
+          : 400;
     });
   }
 
@@ -330,6 +350,10 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
       game.players.white === 'BOT';
     this.botLevel = game.bot?.difficulty ?? 'medium';
 
+    const m = Number(game.tc?.minutes);
+    this.tcMinutes = m === 5 || m === 10 || m === 20 ? (m as 5 | 10 | 20) : 10;
+    this.pendingInviteMinutes = null;
+
     // 1) Who am I? Who's the opponent?
     const white = game.players.white;
     const black = game.players.black;
@@ -369,19 +393,26 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     ]).subscribe(([me, opp]) => {
       this.myName = me?.displayName || me?.email || 'You';
       this.myPhotoURL = me?.photoURL || '../../../assets/user.png';
-      this.myElo = (me as any)?.elo ?? (me as any)?.rating ?? null;
 
-      // If opponent is the bot, label/photo:
+      const tcKey = ((this.tcMinutes ?? 10) + '') as '5' | '10' | '20';
+      const myBlock = (me as any)?.elo?.[tcKey];
+      this.myElo =
+        typeof myBlock?.rating === 'number' ? Math.round(myBlock.rating) : 400;
+
       if (this.isBotGame) {
         this.oppName = `AI - ${this.botLevel[0].toUpperCase()}${this.botLevel.slice(
           1
         )}`;
         this.oppPhotoURL = '../../../assets/robot.png';
-        this.oppElo = 600;
+        this.oppElo = 600; // static for bot
       } else {
         this.oppName = opp?.displayName || opp?.email || '';
         this.oppPhotoURL = opp?.photoURL || '../../../assets/user.png';
-        this.oppElo = (opp as any)?.elo ?? (opp as any)?.rating ?? null;
+        const oppBlock = (opp as any)?.elo?.[tcKey];
+        this.oppElo =
+          typeof oppBlock?.rating === 'number'
+            ? Math.round(oppBlock.rating)
+            : 400;
       }
     });
 
@@ -413,14 +444,6 @@ export class ChessBoardComponent implements OnInit, OnDestroy {
     this.offsetSub = this.rtdbGame.serverOffset$().subscribe((o) => {
       this.serverOffset = o ?? 0;
     });
-
-    if (game.status === 'active' && !this.liveGame) {
-      // First time we see the active game → show start message
-      this.showStartMessage = true;
-      setTimeout(() => {
-        this.showStartMessage = false;
-      }, 4000); // show for 4 seconds
-    }
 
     // 7) RTDB live game stream
     this.rtdbSub?.unsubscribe();

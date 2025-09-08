@@ -21,6 +21,7 @@ import {
 import { Auth } from '@angular/fire/auth';
 import { map, Observable, of } from 'rxjs';
 import { GameRtdbService } from './game-rtdb.service';
+import { EloService } from './elo.service';
 
 export interface GameInvite {
   id: string;
@@ -68,7 +69,7 @@ export class NotificationService {
   private firestore = inject(Firestore);
   private auth = inject(Auth);
 
-  constructor(private rtdbGame: GameRtdbService) {}
+  constructor(private rtdbGame: GameRtdbService, private elo: EloService) {}
 
   invite$(inviteId: string): Observable<GameInvite | null> {
     const ref = doc(this.firestore, 'gameInvites', inviteId);
@@ -419,6 +420,32 @@ export class NotificationService {
       finishedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+
+    try {
+      const snap = await getDoc(ref);
+      const g = snap.data() as any;
+      if (g?.mode === 'pvp' && g?.result) {
+        // confirm -> vote -> finalize (idempotent)
+        await this.elo.confirmResult(gameId);
+        await this.elo.proposeVote(gameId);
+        await this.elo.finalize(gameId);
+      }
+    } catch (e) {
+      console.error(
+        'Elo finalize failed (will retry when opponent opens modal):',
+        e
+      );
+    }
+  }
+
+  async syncEloForFinishedGame(gameId: string): Promise<void> {
+    try {
+      await this.elo.confirmResult(gameId);
+      await this.elo.proposeVote(gameId);
+      await this.elo.finalize(gameId);
+    } catch (e) {
+      console.error('syncEloForFinishedGame:', e);
+    }
   }
 
   /**

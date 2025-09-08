@@ -492,7 +492,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   openProfile(): void {
     const uid = this.uid ?? this.route.snapshot.paramMap.get('uid');
     if (!uid) return;
-    this.router.navigateByUrl(`/${uid}/profile-settings`);
+
+    this.router.navigate(['/', uid, 'profile-settings'], {
+      state: { from: 'dashboard' },
+    });
   }
 
   @HostListener('document:click', ['$event'])

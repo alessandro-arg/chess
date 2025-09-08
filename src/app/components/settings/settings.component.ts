@@ -76,7 +76,10 @@ export class SettingsComponent implements OnInit {
   openProfileSettings(): void {
     const uid = this.route.snapshot.paramMap.get('uid');
     if (!uid) return;
-    this.router.navigate(['/', uid, 'settings', 'profile-settings']);
+
+    this.router.navigate(['/', uid, 'settings', 'profile-settings'], {
+      state: { from: 'settings' },
+    });
   }
 
   openSupport(): void {

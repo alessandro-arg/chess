@@ -1,0 +1,123 @@
+<!-- Backdrop -->
+<div
+  class="fixed inset-0 z-[999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+  role="none"
+  (click)="onBackdrop($event)"
+>
+  <!-- Modal -->
+  <div
+    class="w-full sm:w-[480px] max-w-[520px] rounded-t-2xl sm:rounded-2xl shadow-2xl border border-steel-primary/30 bg-steel-bg/95 text-gray-100 ring-1 ring-inset ring-steel-primary/20 transition-all"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="share-title"
+    (click)="$event.stopPropagation()"
+    [style.paddingBottom]="safeAreaPadding"
+  >
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between p-4 sm:p-5 border-b border-steel-primary/20"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-9 h-9 rounded-xl bg-steel-primary/20 border border-steel-primary/30 grid place-items-center"
+        >
+          <!-- Share icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M8.25 12l7.5-4.5m-7.5 4.5l7.5 4.5m-7.5-4.5V6.75m7.5 4.5v6.75M19.5 6.75a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM9 17.25a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+            />
+          </svg>
+        </div>
+        <h2
+          id="share-title"
+          class="text-lg sm:text-xl font-semibold tracking-tight"
+        >
+          Share link
+        </h2>
+      </div>
+      <button
+        class="p-2 rounded-lg hover:bg-steel-primary/20 border border-transparent hover:border-steel-primary/30 focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        (click)="close.emit()"
+        aria-label="Close share menu"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-5 h-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 8.586l4.95-4.95a1 1 0 111.414 1.415L11.414 10l4.95 4.95a1 1 0 11-1.414 1.414L10 11.414l-4.95 4.95a1 1 0 01-1.414-1.414L8.586 10l-4.95-4.95A1 1 0 115.05 3.636L10 8.586z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <!-- URL box -->
+    <div class="px-4 sm:px-5 pt-4">
+      <div
+        class="flex items-center gap-3 p-3 rounded-xl bg-steel-primary/10 border border-steel-primary/30"
+      >
+        <div class="min-w-0">
+          <p class="text-xs uppercase tracking-wider text-gray-400">Link</p>
+          <p class="truncate text-sm sm:text-base text-gray-100" [title]="url">
+            {{ url }}
+          </p>
+        </div>
+        <button
+          class="ml-auto p-1 rounded-lg border border-steel-primary/30 bg-steel-bg/60 hover:bg-steel-primary/20 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+          (click)="handle('copy')"
+        >
+          <img
+            src="../../../assets/copy-link.png"
+            alt="Copy icon"
+            class="w-7 h-7"
+          />
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid of actions -->
+    <div class="p-4 sm:p-5">
+      <div class="grid grid-cols-4 gap-3 sm:gap-4">
+        <button
+          *ngFor="let a of actions"
+          (click)="handle(a.key)"
+          class="group flex flex-col items-center gap-2 p-3 rounded-xl border border-steel-primary/20 bg-steel-primary/10 hover:bg-steel-primary/20 hover:border-steel-accent transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+          [attr.aria-label]="a.label"
+        >
+          <div
+            class="p-1 rounded-xl grid place-items-center border border-steel-primary/20 bg-steel-bg/60 group-hover:bg-steel-primary/20 transition"
+          >
+            <img [src]="a.icon" alt="Action icon" class="w-7" />
+          </div>
+          <span
+            class="text-[11px] sm:text-xs text-gray-300 group-hover:text-white text-center leading-tight"
+            >{{ a.label }}</span
+          >
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer (iOS safe area friendly) -->
+    <div class="px-4 sm:px-5 pb-3 sm:pb-5">
+      <button
+        class="w-full px-4 py-3 rounded-xl bg-steel-accent text-gray-900 font-medium hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-steel-accent"
+        (click)="close.emit()"
+      >
+        Done
+      </button>
+    </div>
+  </div>
+</div>

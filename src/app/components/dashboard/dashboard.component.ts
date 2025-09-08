@@ -34,6 +34,7 @@ import { LatencyService } from '../../latency.service';
 import { LiveClockComponent } from '../live-clock/live-clock.component';
 import { GamesModalComponent } from '../games-modal/games-modal.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ShareMenuComponent } from '../share-menu/share-menu.component';
 
 type Outcome = 'W' | 'L' | 'D';
 
@@ -46,6 +47,7 @@ type Outcome = 'W' | 'L' | 'D';
     LiveClockComponent,
     GamesModalComponent,
     ReactiveFormsModule,
+    ShareMenuComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -108,6 +110,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   friendSearchRoot?: ElementRef;
 
   selectedOpponentUid: string | null = null;
+
+  showShare = false;
+  profileTitle = 'Check out my profile';
+  profileUrl = 'https://chess2.alessandro-argenziano.com';
 
   constructor(
     private readonly auth: AuthService,
@@ -278,6 +284,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.outgoingInvitesSub?.unsubscribe?.();
     this.latencySvc.stop();
+  }
+
+  async onShareClick() {
+    // Prefer Web Share on mobile (iOS/Android)
+    if (navigator.share && this.isLikelyMobile()) {
+      try {
+        await navigator.share({
+          title: this.profileTitle,
+          text: this.profileTitle,
+          url: this.profileUrl,
+        });
+        return;
+      } catch {
+        // Fall through to modal if user cancels or share fails
+      }
+    }
+    this.showShare = true; // desktop or fallback
+  }
+
+  private isLikelyMobile() {
+    const ua = navigator.userAgent || '';
+    return /iphone|ipad|ipod|android|mobile/i.test(ua);
   }
 
   setBotDifficulty(level: 'easy' | 'medium' | 'hard') {

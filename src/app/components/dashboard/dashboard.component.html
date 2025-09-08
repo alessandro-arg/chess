@@ -717,19 +717,6 @@
                   <span class="text-xs text-green-400">Online</span>
                 </div>
               </div>
-              <!-- Settings -->
-              <button
-                type="button"
-                (click)="openProfile()"
-                class="p-1 text-gray-400 hover:text-steel-accent transition-colors rounded focus:outline-none focus:ring-2 focus:ring-steel-accent"
-                aria-label="Profile settings"
-              >
-                <img
-                  src="../../../assets/settings.png"
-                  alt="Settings icon"
-                  class="w-5 h-5"
-                />
-              </button>
             </div>
 
             <!-- Ratings -->
@@ -754,14 +741,22 @@
             <div class="flex gap-2">
               <button
                 type="button"
-                class="flex-1 bg-steel-bg/60 hover:bg-steel-primary/20 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium py-2 px-3 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                (click)="openProfile()"
+                class="flex items-center justify-center gap-2 flex-1 bg-steel-bg/60 hover:bg-steel-primary/20 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white font-medium py-2 px-3 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                aria-label="Profile settings"
               >
-                View Profile
+                <p>Profile Settings</p>
+                <img
+                  src="../../../assets/settings.png"
+                  alt="Settings icon"
+                  class="w-5 h-5"
+                />
               </button>
               <button
                 type="button"
                 class="px-3 py-2 bg-steel-bg/60 hover:bg-steel-primary/20 border border-steel-primary/30 hover:border-steel-accent text-gray-300 hover:text-white rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                 aria-label="Share profile"
+                (click)="onShareClick()"
               >
                 <img
                   src="../../../assets/share.png"
@@ -858,6 +853,13 @@
           ></app-friends-modal>
         </section>
       </aside>
+
+      <app-share-menu
+        *ngIf="showShare"
+        [url]="profileUrl"
+        [title]="profileTitle"
+        (close)="showShare = false"
+      />
     </div>
 
     <!-- Footer Status Bar -->

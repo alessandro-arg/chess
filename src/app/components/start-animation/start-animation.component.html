@@ -1,7 +1,22 @@
-<div class="fixed inset-0 z-[1000] grid place-items-center bg-[#0b1220]">
-  <ng-lottie
-    [options]="options"
-    (animationCreated)="onCreated($event)"
-    class="w-[min(520px,85vw)] h-[min(520px,85vw)]"
-  ></ng-lottie>
+<div
+  class="fixed inset-0 z-[1000] grid place-items-center bg-steel-bg chess-piece-bg transition-opacity duration-400"
+  [class.opacity-0]="closing"
+>
+  <div class="floating-orb floating-orb-1"></div>
+  <div class="floating-orb floating-orb-2"></div>
+  <div class="floating-orb floating-orb-3"></div>
+  <div class="flex flex-col items-center select-none">
+    <h1
+      class="text-white font-bold text-3xl md:text-4xl transition-all duration-[2s] ease-out opacity-0 translate-y-8"
+      [class.opacity-100]="showTitle"
+      [class.translate-y-0]="showTitle"
+    >
+      Chess²
+    </h1>
+    <ng-lottie
+      [options]="options"
+      (animationCreated)="onCreated($event)"
+      class="w-[min(420px,70vw)] h-[min(420px,70vw)]"
+    ></ng-lottie>
+  </div>
 </div>

@@ -5,14 +5,14 @@
   <div class="floating-orb floating-orb-3"></div>
 
   <app-start-animation
-    *ngIf="showIntro"
+    *ngIf="!booting && showIntro"
     (done)="onIntroDone()"
   ></app-start-animation>
 
   <main
-    class="transition-opacity duration-500"
-    [class.opacity-0]="!ready || showIntro"
-    [class.opacity-100]="ready && !showIntro"
+    *ngIf="!booting && !showIntro"
+    class="opacity-0 transition-all duration-300"
+    [ngClass]="{ 'opacity-100': !showIntro }"
   >
     <router-outlet></router-outlet>
 

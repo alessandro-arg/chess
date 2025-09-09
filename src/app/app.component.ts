@@ -30,7 +30,7 @@ export class AppComponent implements OnInit {
   isAuthenticated$: Observable<boolean> = this.auth.isAuthenticated$;
   showA2HS = false;
   showIntro = false;
-  ready = false;
+  booting = true;
 
   constructor(
     private readonly auth: AuthService,
@@ -50,7 +50,7 @@ export class AppComponent implements OnInit {
 
         this.isAuthenticated$.pipe(take(1)).subscribe((isAuthed) => {
           this.showIntro = !isAuthed && onLogin && firstTime;
-          this.ready = true;
+          this.booting = false;
         });
       });
 

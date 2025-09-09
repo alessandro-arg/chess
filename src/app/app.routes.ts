@@ -20,7 +20,7 @@ export const routes: Routes = [
   {
     path: ':uid/dashboard',
     component: DashboardComponent,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
   },
   { path: ':uid/profile-settings', component: ProfileSettingsComponent },
   { path: ':uid/support', component: SupportComponent },
@@ -29,7 +29,7 @@ export const routes: Routes = [
   {
     path: ':uid/settings',
     component: SettingsComponent,
-    // canActivate: [AuthGuard],
+    canActivate: [authGuard],
     children: [
       { path: 'profile-settings', component: ProfileSettingsComponent },
       { path: 'support', component: SupportComponent },

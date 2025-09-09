@@ -4,7 +4,16 @@
   <div class="floating-orb floating-orb-2"></div>
   <div class="floating-orb floating-orb-3"></div>
 
-  <main>
+  <app-start-animation
+    *ngIf="showIntro"
+    (done)="onIntroDone()"
+  ></app-start-animation>
+
+  <main
+    class="transition-opacity duration-500"
+    [class.opacity-0]="!ready || showIntro"
+    [class.opacity-100]="ready && !showIntro"
+  >
     <router-outlet></router-outlet>
 
     <div

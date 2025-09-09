@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { provideHttpClient } from '@angular/common/http';
 
@@ -11,9 +12,12 @@ import { provideAuth, getAuth } from '@angular/fire/auth';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { provideDatabase, getDatabase } from '@angular/fire/database';
 import { provideStorage, getStorage } from '@angular/fire/storage';
+import { provideLottieOptions } from 'ngx-lottie';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideAnimations(),
+    provideLottieOptions({ player: () => import('lottie-web') }),
     provideRouter(routes),
     provideHttpClient(),
     provideFirebaseApp(() => initializeApp(environment.firebase)),

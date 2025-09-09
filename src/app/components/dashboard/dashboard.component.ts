@@ -28,6 +28,7 @@ import {
   NotificationService,
   GameDoc,
 } from '../../notification.service';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { UserProfile, UserService } from '../../user.service';
 import { PresenceService } from '../../presence.service';
 import { GameRtdbService } from '../../game-rtdb.service';
@@ -53,6 +54,15 @@ type Outcome = 'W' | 'L' | 'D';
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
+  animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('500ms ease-out', style({ opacity: 1 })),
+      ]),
+    ]),
+  ],
+  host: { '[@fadeIn]': '' },
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: UserProfile | null = null;

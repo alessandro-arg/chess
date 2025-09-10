@@ -14,3 +14,13 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   background: #1e293b;
 }
+
+body.lock-scroll {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+  top: calc(-1 * var(--scroll-y, 0px));
+}

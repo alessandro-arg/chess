@@ -1,20 +1,20 @@
 <!-- Backdrop -->
-<div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+<div class="fixed inset-0 z-50 flex items-center justify-center">
   <div
-    class="absolute inset-0 bg-black/60"
+    class="absolute inset-0 bg-black/60 backdrop-blur-sm"
     (click)="close.emit()"
     aria-hidden="true"
   ></div>
 
   <!-- Panel -->
   <div
-    class="relative w-full sm:w-[560px] max-w-full sm:max-w-[560px] bg-steel-secondary/60 backdrop-blur border border-steel-primary/20 rounded-2xl shadow-xl mx-2 sm:mx-0"
+    class="relative w-full min-h-[400px] max-w-lg sm:max-w-xl bg-steel-secondary/70 border-l-4 border-steel-accent backdrop-blur rounded-xl shadow-2xl mx-4 sm:mx-0"
     role="dialog"
     aria-modal="true"
   >
     <!-- Header -->
     <div
-      class="flex items-center justify-between p-4 border-b border-steel-primary/20"
+      class="flex items-center justify-between px-4 sm:px-6 py-4 bg-gradient-to-r from-steel-secondary/50 to-steel-bg/30 border-b border-steel-primary/20"
     >
       <h3 class="text-white font-semibold text-base sm:text-lg">
         All Recent Games
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Body -->
-    <div class="p-3">
+    <div class="px-4 pr-0 sm:px-6 sm:pr-0 py-4 max-h-[70vh] overflow-y-auto">
       <ng-container *ngIf="vm$ | async as vm; else loading">
         <div *ngIf="vm.error" class="text-sm text-red-400 px-1 py-2">
           {{ vm.error }}
@@ -46,7 +46,7 @@
 
           <article
             *ngFor="let it of vm.items; trackBy: trackById"
-            class="flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
+            class="mr-4 flex items-center justify-between p-3 bg-steel-bg/30 hover:bg-steel-bg/50 rounded-lg transition-colors"
           >
             <div class="flex items-center gap-3">
               <div

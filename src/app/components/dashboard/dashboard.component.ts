@@ -323,6 +323,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.latencySvc.stop();
   }
 
+  lockScroll() {
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    document.documentElement.style.setProperty('--scroll-y', `${y}px`);
+    document.body.classList.add('lock-scroll');
+  }
+
+  // call on close
+  unlockScroll() {
+    const y =
+      parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          '--scroll-y'
+        )
+      ) || 0;
+    document.body.classList.remove('lock-scroll');
+    window.scrollTo(0, y);
+  }
+
   async onShareClick() {
     // Prefer Web Share on mobile (iOS/Android)
     if (navigator.share && this.isLikelyMobile()) {
@@ -507,11 +525,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   openFriendsModal() {
+    this.lockScroll();
     this.friendsModalTab = 'search';
     this.showFriendsModal = true;
   }
 
   closeFriendsModal() {
+    this.unlockScroll();
     this.showFriendsModal = false;
   }
 
@@ -621,6 +641,84 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return { box: 'bg-gray-500/20', text: 'text-gray-400' };
   }
 
+  statusPretty(g: GameDoc): string {
+    const raw = (g as any)?.status?.toString()?.toLowerCase?.() ?? '';
+    switch (raw) {
+      case 'mate':
+      case 'checkmate':
+        return 'Checkmate';
+      case 'resign':
+      case 'resignation':
+        return 'Surrendered';
+      case 'timeout':
+      case 'time':
+      case 'timeforfeit':
+        return 'No time left';
+      case 'stalemate':
+        return 'Stalemate';
+      case 'repetition':
+        return 'Repetition';
+      case 'insufficient':
+      case 'insufficient_material':
+        return 'Insufficient material';
+      case 'abort':
+      case 'aborted':
+        return 'Aborted';
+      case 'abandon':
+      case 'disconnect':
+        return 'Disconnected';
+      case 'draw':
+        return 'Draw';
+      default:
+        if ((g as any)?.result === '1/2-1/2') return 'Draw';
+        return 'Game over';
+    }
+  }
+
+  playerColor(g: GameDoc, myUid: string): 'white' | 'black' {
+    return g.players?.white === myUid ? 'white' : 'black';
+  }
+
+  tcLabel(g: GameDoc): string {
+    const m =
+      (g as any)?.time?.minutes ??
+      (g as any)?.minutes ??
+      (g as any)?.tc?.minutes ??
+      (g as any)?.config?.minutes ??
+      (g as any)?.settings?.minutes ??
+      0;
+
+    const inc =
+      (g as any)?.time?.increment ??
+      (g as any)?.increment ??
+      (g as any)?.tc?.increment ??
+      (g as any)?.config?.increment ??
+      (g as any)?.settings?.increment ??
+      0;
+
+    if (!m) return '-';
+    return inc ? `${m}+${inc}` : `${m} min`;
+  }
+
+  eloDelta(g: GameDoc, myUid: string): number | null {
+    const color = this.playerColor(g, myUid);
+    const candidates: unknown[] = [
+      (g as any)?.eloDelta?.[myUid],
+      (g as any)?.eloDelta?.[color],
+      (g as any)?.delta?.[myUid],
+      (g as any)?.delta?.[color],
+      (g as any)?.ratingDiff?.[myUid],
+      (g as any)?.ratingDiff?.[color],
+      (g as any)?.ratingDelta,
+    ];
+
+    for (const v of candidates) {
+      const n = typeof v === 'number' ? v : Number(v);
+      if (Number.isFinite(n)) return Math.round(n);
+    }
+    return null;
+  }
+
   timeAgo(d?: any): string {
     const dt = d?.toDate ? (d.toDate() as Date) : d instanceof Date ? d : null;
     if (!dt) return '';
@@ -642,9 +740,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   openAllGamesModal() {
+    this.lockScroll();
     this.showGamesModal = true;
   }
   closeAllGamesModal() {
     this.showGamesModal = false;
+    this.unlockScroll();
   }
 }

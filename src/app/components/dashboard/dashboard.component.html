@@ -1,5 +1,5 @@
 <!-- Chess Dashboard Template -->
-<div class="min-h-screen bg-steel-bg">
+<div class="h-screen bg-steel-bg">
   <!-- Floating Background Orbs -->
   <div
     class="fixed top-10 right-10 w-32 h-32 bg-steel-primary/5 rounded-full blur-3xl pointer-events-none"
@@ -10,7 +10,7 @@
 
   <!-- Main Dashboard Container -->
   <div
-    class="max-w-7xl mx-auto px-4 py-6 lg:py-8 min-h-dvh flex flex-col gap-8 cursor-default"
+    class="max-w-7xl mx-auto px-4 py-6 lg:py-8 h-dvh flex flex-col gap-8 cursor-default"
   >
     <!-- Header Section -->
     <header>
@@ -224,7 +224,7 @@
             <article
               class="group bg-steel-secondary/70 backdrop-blur-lg border-l-4 border-steel-primary hover:border-steel-accent rounded-xl p-6 transition-all hover:scale-[1.02] focus-within:scale-[1.02] shadow-lg hover:shadow-xl"
             >
-              <div class="flex items-start justify-between mb-4">
+              <div class="flex items-start justify-between mb-5">
                 <div class="flex items-center gap-3">
                   <div
                     class="w-12 h-12 bg-steel-primary/20 group-hover:bg-steel-accent/20 rounded-lg flex items-center justify-center transition-colors"
@@ -250,7 +250,7 @@
               </div>
 
               <!-- Bot Difficulty Selection -->
-              <div class="mb-4">
+              <div class="mb-5">
                 <label class="block text-sm font-medium text-steel-accent mb-2"
                   >Difficulty Level</label
                 >
@@ -289,7 +289,7 @@
               </div>
 
               <!-- Time Control -->
-              <div class="mb-6">
+              <div class="mb-7">
                 <label class="block text-sm font-medium text-steel-accent mb-2"
                   >Time Control</label
                 >
@@ -327,7 +327,7 @@
               <button
                 type="button"
                 (click)="startBotGame()"
-                class="w-full bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
+                class="w-full mt-[6px] bg-gradient-to-r from-steel-primary to-steel-accent hover:from-steel-accent hover:to-steel-primary text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-steel-accent focus:ring-offset-2 focus:ring-offset-steel-secondary shadow-lg"
               >
                 <span class="flex items-center justify-center gap-2">
                   Start Game
@@ -435,12 +435,6 @@
 
               <!-- Friend Invitation -->
               <div class="mb-4" #friendSearchRoot (keydown)="onKeydown($event)">
-                <label
-                  for="friend-search"
-                  class="block text-sm font-medium text-steel-accent mb-2 pointer-events-none"
-                  >Who do you want to destroy?</label
-                >
-
                 <div class="relative">
                   <!-- Styled input wrapper to host the chip + input -->
                   <div
@@ -646,13 +640,34 @@
                           </ng-container>
                         </p>
                         <div
-                          class="flex items-center gap-2 text-xs text-gray-400"
+                          class="flex items-center gap-2 text-xs text-gray-300 flex-wrap"
                         >
-                          <span>{{ g.status || "-" }}</span>
-                          <span>•</span>
-                          <span>{{
-                            timeAgo(g.finishedAt || g.updatedAt || g.createdAt)
-                          }}</span>
+                          <!-- Mode (time control) -->
+                          <span class="text-gray-400">
+                            {{ tcLabel(g) }}
+                          </span>
+                          <span class="text-gray-400">•</span>
+
+                          <!-- Friendly win condition -->
+                          <span class="text-gray-400">
+                            {{ statusPretty(g) }}
+                          </span>
+                          <span class="text-gray-400">•</span>
+
+                          <!-- Color played -->
+                          <span class="text-gray-400">
+                            {{ playerColor(g, myUid) | titlecase }}
+                          </span>
+
+                          <!-- Time ago (keep your logic) -->
+                          <span class="text-gray-400">•</span>
+                          <span class="text-gray-400">
+                            {{
+                              timeAgo(
+                                g.finishedAt || g.updatedAt || g.createdAt
+                              )
+                            }}
+                          </span>
                         </div>
                       </div>
                     </ng-container>
@@ -661,10 +676,12 @@
               </div>
 
               <!-- View All Games -->
-              <div class="mt-4 pt-3 border-t border-steel-primary/20">
+              <div
+                class="mt-4 pt-3 border-t border-steel-primary/20 flex items-center justify-center"
+              >
                 <button
                   type="button"
-                  class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+                  class="w-fit px-4 text-center text-steel-accent hover:text-white text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
                   (click)="openAllGamesModal()"
                 >
                   View All Games
@@ -882,13 +899,17 @@
             </ng-template>
 
             <!-- View All Friends -->
-            <button
-              type="button"
-              (click)="openFriendsModal()"
-              class="w-full text-center text-steel-accent hover:text-steel-primary text-sm py-2 rounded-lg hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+            <div
+              class="mt-4 pt-3 border-t border-steel-primary/20 flex items-center justify-center"
             >
-              View All Friends ({{ (friendCount$ | async) || 0 }})
-            </button>
+              <button
+                type="button"
+                (click)="openFriendsModal()"
+                class="w-fit px-4 text-center text-steel-accent hover:text-white text-sm py-2 rounded-md hover:bg-steel-bg/30 transition-all focus:outline-none focus:ring-2 focus:ring-steel-accent"
+              >
+                View All Friends ({{ (friendCount$ | async) || 0 }})
+              </button>
+            </div>
           </div>
           <app-friends-modal
             [isOpen]="showFriendsModal"

@@ -700,25 +700,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return inc ? `${m}+${inc}` : `${m} min`;
   }
 
-  eloDelta(g: GameDoc, myUid: string): number | null {
-    const color = this.playerColor(g, myUid);
-    const candidates: unknown[] = [
-      (g as any)?.eloDelta?.[myUid],
-      (g as any)?.eloDelta?.[color],
-      (g as any)?.delta?.[myUid],
-      (g as any)?.delta?.[color],
-      (g as any)?.ratingDiff?.[myUid],
-      (g as any)?.ratingDiff?.[color],
-      (g as any)?.ratingDelta,
-    ];
-
-    for (const v of candidates) {
-      const n = typeof v === 'number' ? v : Number(v);
-      if (Number.isFinite(n)) return Math.round(n);
-    }
-    return null;
-  }
-
   timeAgo(d?: any): string {
     const dt = d?.toDate ? (d.toDate() as Date) : d instanceof Date ? d : null;
     if (!dt) return '';

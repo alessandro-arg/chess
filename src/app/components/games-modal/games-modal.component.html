@@ -36,7 +36,7 @@
           {{ vm.error }}
         </div>
 
-        <div class="max-h-96 overflow-y-auto space-y-3">
+        <div class="max-h-[400px] overflow-y-auto space-y-3">
           <div
             *ngIf="!vm.error && vm.items.length === 0"
             class="text-sm text-gray-400 px-1 py-2"
@@ -62,26 +62,32 @@
                 <p class="text-sm font-medium text-white">
                   vs {{ it.opponentLabel }}
                 </p>
-                <div class="flex items-center gap-2 text-xs text-gray-400">
-                  <span>{{ it.statusLabel }}</span>
-                  <span>•</span>
-                  <span>{{ it.whenLabel }}</span>
+                <div
+                  class="flex items-center gap-2 text-xs text-gray-400 flex-wrap"
+                >
+                  <!-- Mode -->
+                  <span>
+                    {{ it.tcLabel }}
+                  </span>
+                  <span class="text-gray-400">•</span>
+
+                  <!-- Friendly win condition -->
+                  <span>
+                    {{ it.statusLabel }}
+                  </span>
+                  <span class="text-gray-400">•</span>
+
+                  <!-- Color -->
+                  <span>
+                    {{ it.colorLabel }}
+                  </span>
+                  <span class="text-gray-400">•</span>
+
+                  <!-- Time ago -->
+                  <span class="text-gray-400">{{ it.whenLabel }}</span>
                 </div>
               </div>
             </div>
-
-            <button
-              type="button"
-              class="text-steel-accent hover:text-steel-primary transition-colors focus:outline-none focus:ring-2 focus:ring-steel-accent rounded"
-              aria-label="View game analysis"
-              (click)="goAnalysis(it.id)"
-            >
-              <img
-                src="../../../assets/analysis.png"
-                alt="Analysis icon"
-                class="w-5 h-5"
-              />
-            </button>
           </article>
         </div>
       </ng-container>

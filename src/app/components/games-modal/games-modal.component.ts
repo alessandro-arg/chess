@@ -20,8 +20,10 @@ type VmItem = {
   outcome: Outcome;
   boxClass: string;
   textClass: string;
-  opponentLabel: string; // already resolved (BOT/Unknown/name/uid)
+  opponentLabel: string;
   statusLabel: string;
+  colorLabel: string;
+  tcLabel: string;
   whenLabel: string;
 };
 
@@ -108,7 +110,6 @@ export class GamesModalComponent implements OnInit {
   private makeItem(myUid: string, g: GameDoc, opponentLabel: string): VmItem {
     const outcome = this.outcomeForUser(myUid, g);
     const classes = this.outcomeClasses(outcome);
-    const when = this.timeAgo(g?.finishedAt || g?.updatedAt || g?.createdAt);
 
     return {
       id: g.id,
@@ -116,8 +117,12 @@ export class GamesModalComponent implements OnInit {
       boxClass: classes.box,
       textClass: classes.text,
       opponentLabel,
-      statusLabel: g?.status || '—',
-      whenLabel: when,
+      statusLabel: this.statusPretty(g),
+      colorLabel: this.playerColor(g, myUid).replace(/^\w/, (c) =>
+        c.toUpperCase()
+      ),
+      tcLabel: this.tcLabel(g),
+      whenLabel: this.timeAgo(g?.finishedAt || g?.updatedAt || g?.createdAt),
     };
   }
 
@@ -186,5 +191,64 @@ export class GamesModalComponent implements OnInit {
   @HostListener('document:keydown.escape')
   onEsc() {
     this.close.emit();
+  }
+
+  statusPretty(g: GameDoc): string {
+    const raw = (g as any)?.status?.toString()?.toLowerCase?.() ?? '';
+    switch (raw) {
+      case 'mate':
+      case 'checkmate':
+        return 'Checkmate';
+      case 'resign':
+      case 'resignation':
+        return 'Surrendered';
+      case 'timeout':
+      case 'time':
+      case 'timeforfeit':
+        return 'No time left';
+      case 'stalemate':
+        return 'Stalemate';
+      case 'repetition':
+        return 'Repetition';
+      case 'insufficient':
+      case 'insufficient_material':
+        return 'Insufficient material';
+      case 'abort':
+      case 'aborted':
+        return 'Aborted';
+      case 'abandon':
+      case 'disconnect':
+        return 'Disconnected';
+      case 'draw':
+        return 'Draw';
+      default:
+        if ((g as any)?.result === '1/2-1/2') return 'Draw';
+        return 'Game over';
+    }
+  }
+
+  playerColor(g: GameDoc, myUid: string): 'white' | 'black' {
+    return g.players?.white === myUid ? 'white' : 'black';
+  }
+
+  tcLabel(g: GameDoc): string {
+    const m =
+      (g as any)?.time?.minutes ??
+      (g as any)?.minutes ??
+      (g as any)?.tc?.minutes ??
+      (g as any)?.config?.minutes ??
+      (g as any)?.settings?.minutes ??
+      0;
+
+    const inc =
+      (g as any)?.time?.increment ??
+      (g as any)?.increment ??
+      (g as any)?.tc?.increment ??
+      (g as any)?.config?.increment ??
+      (g as any)?.settings?.increment ??
+      0;
+
+    if (!m) return '-';
+    return inc ? `${m}+${inc}` : `${m} min`;
   }
 }

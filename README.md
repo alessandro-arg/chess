@@ -1,8 +1,6 @@
 # <img src="https://chess2.alessandro-argenziano.com/assets/login-icon.png" alt="Chess² Logo" width="35" /> Chess² - Online Chess Game
 
 <p align="left">
-  <a href="https://chess2.alessandro-argenziano.com"><img src="https://img.shields.io/badge/Demo-Live-green?style=for-the-badge&logo=google-chrome" alt="Live Demo"></a>&nbsp;&nbsp;
-  <a href="https://github.com/alessandro-arg/chess"><img src="https://img.shields.io/badge/Code-GitHub-blue?style=for-the-badge&logo=github" alt="GitHub Repo"></a>&nbsp;&nbsp;
   <a href="https://angular.dev/"><img src="https://img.shields.io/badge/Angular-17-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular"></a>&nbsp;&nbsp;
   <a href="https://firebase.google.com/"><img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Database-FFCA28?style=for-the-badge&logo=firebase" alt="Firebase"></a>&nbsp;&nbsp;
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS"></a>
@@ -35,11 +33,9 @@ Dashboard preview:
 -  **Game History** – Recap of your recent matches
 -  **Responsive UI** – Built with Angular 17 & TailwindCSS
   
-
 ## 🚀 Live Demo
 
 🔗 Try it here: [https://chess2.alessandro-argenziano.com](https://chess2.alessandro-argenziano.com)  
-
 
 ## 🛠️ Tech Stack
 
@@ -255,12 +251,6 @@ Common Angular scripts (adjust to match your `package.json`):
 }
 ```
 
-## 📈 Future Improvements
-
-- 🏅 Global Leaderboard
-- 🧩 Tournaments & Matchmaking
-- 💬 In-game Chat
-
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!
@@ -272,10 +262,6 @@ Contributions, issues, and feature requests are welcome!
 5. Open a Pull Request
 
 I use Conventional Commits and PR templates (optional). Keep components small, typed, and accessible.
-
-## 🧑‍💻 Maintainers
-
-- Made with ❤️ by **Alessandro** – [@alessandro-arg](https://github.com/alessandro-arg)
 
 ## 📄 License
 
@@ -295,4 +281,4 @@ For questions, feature requests, or collaboration:
 
 - Open an issue: [https://github.com/alessandro-arg/chess/issues](https://github.com/alessandro-arg/chess/issues)
 - Or reach out to **contact@alessandro-argenziano.com**
-- Have a look at my [portfolio](https://alessandro-argenziano.com)
+- Have a look at my [Portfolio](https://alessandro-argenziano.com)

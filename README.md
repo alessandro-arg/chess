@@ -25,7 +25,7 @@ Dashboard preview:
 
 ## ✨ Features
 
--  **Authentication** – Sign up & log in with Firebase Auth  
+-  **entication** – Sign up & log in with Firebase   
 -  **Play vs Bot** – Challenge the Stockfish API (via Render Worker)  
 -  **Friends System** – Add friends & invite them to play  
 -  **Real-time Games** – Powered by Firebase Realtime Database  
@@ -40,7 +40,7 @@ Dashboard preview:
 ## 🛠️ Tech Stack
 
 - **Frontend:** Angular 17 (standalone components),TypeScript, TailwindCSS  
-- **Backend:** Firebase (Auth, Firestore, Realtime Database)  
+- **Backend:** Firebase (, Firestore, Realtime Database)  
 - **Chess Engine:** Stockfish API (served via [Render](https://render.com))  
 - **Other:** Angular SSR, Express server for deployment  
 
@@ -89,9 +89,9 @@ Dashboard preview:
 │ │ ├─ app.routes.ts
 │ │ ├─ app.config.ts
 │ │ ├─ app.config.server.ts
-│ │ ├─ auth.guard.ts
+│ │ ├─ .guard.ts
 │ │ │
-│ │ ├─ auth.service.ts
+│ │ ├─ .service.ts
 │ │ ├─ bot.service.ts
 │ │ ├─ elo.service.ts
 │ │ ├─ friend.service.ts
@@ -140,7 +140,7 @@ Dashboard preview:
 
 - Node.js 18+
 - PNPM or NPM
-- Firebase project (console) with Authentication, Firestore/RTDB and Storage enabled
+- Firebase project (console) with entication, Firestore/RTDB and Storage enabled
 
 ### 2) Clone & install
 
@@ -190,7 +190,6 @@ App will be running on: [http://localhost:4200](http://localhost:4200).
 - Email/Password and Google sign‑in via Firebase Auth
 - Route guards to protect authenticated views
 - Per‑user data isolation (security rules below)
-- 
 
 ## 📦 Scripts
 
